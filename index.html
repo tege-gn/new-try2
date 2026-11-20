@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PIS License Store</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0F172A',
+            card: '#1E293B',
+            border: '#334155',
+            muted: '#94A3B8',
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    html, body { background: #0F172A; color: #F1F5F9; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none; }
+    .fade-in { animation: fadeIn .25s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .mono { font-family: ui-monospace, monospace; letter-spacing: 0.5px; }
+  </style>
+</head>
+<body class="font-sans antialiased">
+
+  <div id="app" class="max-w-md mx-auto min-h-screen pb-20"></div>
+  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-card border border-border px-4 py-2 rounded-lg text-sm opacity-0 pointer-events-none transition-opacity z-50"></div>
+
+  <script>
+    // ================= CONFIG =================
+    const API_URL = "https://script.google.com/macros AKfycbyWz6BbNYh0FFazEd0kbGBaGFEzs8G4s4O7ljMZUrgGJKR-bZu-8bfeslI3hLqEsGbwpw/exec";
+
+
+    // ================= STATE =================
+    const state = {
+      route: 'home',
+      user: {
+        chatId: null,
+        name: '',
+        phone: '',
+        registered: false
+      },
+      products: [],
+      buyStep: null,
+      productKey: '',
+      resolvedKey: null,
+      paymentMode: null,
+      paymentOptions: [],
+      txnNumber: '',
+      currentOrderId: null,
+      myOrders: [],
+      myLicenses: [],
+      regName: '',
+      regPhone: '',
+      loading: false
+    };
+
+    // ================= TELEGRAM =================
+    if (window.Telegram?.WebApp) {
+      const tg = Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+      tg.setHeaderColor('#0F172A');
+      state.user.chatId = tg.initDataUnsafe?.user?.id?.toString() || null;
+    }
+
+    // ================= API =================
+    async function apiGet(action, params = {}) {
+      const url = new URL(API_URL);
+      url.searchParams.set('action', action);
+      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+      const res = await fetch(url.toString());
+      return res.json();
+    }
+
+    async function apiPost(action, body = {}) {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action, ...body })
+      });
+      return res.json();
+    }
+
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.opacity = '1';
+      clearTimeout(t._t);
+      t._t = setTimeout(() => t.style.opacity = '0', 2200);
+    }
+
+    // ================= NAVIGATION =================
+    function navigate(route) {
+      // Force registration
+      if (!state.user.registered && route !== 'profile' && route !== 'home') {
+        toast('Please register first');
+        state.route = 'profile';
+        render();
+        return;
+      }
+      state.route = route;
+      window.scrollTo(0, 0);
+      render();
+    }
+
+    // ================= UI HELPERS =================
+    function bottomNav(active) {
+      const items = [
+        { key: 'home', icon: '🏠', label: 'Home' },
+        { key: 'products', icon: '🛍', label: 'Products' },
+        { key: 'license', icon: '🔑', label: 'License' },
+        { key: 'profile', icon: '👤', label: 'Profile' }
+      ];
+      return `
+        <nav class="fixed bottom-0 inset-x-0 max-w-md mx-auto bg-card border-t border-border flex z-40">
+          ${items.map(i => `
+            <button onclick="navigate('${i.key}')" class="flex-1 py-3 text-center text-xs ${active === i.key ? 'text-emerald-400' : 'text-muted'}">
+              <div class="text-lg mb-0.5">${i.icon}</div>
+              <div>${i.label}</div>
+            </button>
+          `).join('')}
+        </nav>`;
+    }
+
+    function header(title, back = null) {
+      return `
+        <header class="sticky top-0 z-30 bg-bg/95 backdrop-blur border-b border-border">
+          <div class="flex items-center px-4 h-14 gap-3">
+            ${back ? `<button onclick="${back}" class="text-2xl">←</button>` : ''}
+            <h1 class="font-semibold">${title}</h1>
+          </div>
+        </header>`;
+    }
+
+    // ================= HOME =================
+    function renderHome() {
+      return `
+        ${header('PIS License Store')}
+        <main class="px-4 pt-6 space-y-5 fade-in">
+          <div class="bg-card border border-border rounded-2xl p-5 text-center">
+            <div class="text-4xl mb-2">🔐</div>
+            <h2 class="text-lg font-bold text-emerald-400">License Activation</h2>
+            <p class="text-sm text-slate-300 mt-2">Register first, then buy your license key.</p>
+          </div>
+
+          ${!state.user.registered ? `
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-sm text-amber-300">
+              ⚠️ You need to register before buying a license.
+              <button onclick="navigate('profile')" class="block w-full mt-3 py-2 rounded-lg bg-amber-500 text-black font-medium">
+                Register Now
+              </button>
+            </div>
+          ` : `
+            <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-sm text-emerald-300">
+              ✅ Registered as ${state.user.name}
+            </div>
+          `}
+
+          <div class="bg-card border border-border rounded-xl p-4 text-sm text-muted space-y-1">
+            <p class="font-medium text-slate-300 mb-2">How it works:</p>
+            <p>1. Register your account</p>
+            <p>2. Download the APK</p>
+            <p>3. Buy license with Product Key</p>
+            <p>4. Receive License Key after approval</p>
+          </div>
+        </main>
+        ${bottomNav('home')}`;
+    }
+
+    // ================= PRODUCTS =================
+    async function loadProducts() {
+      state.loading = true;
+      render();
+      const res = await apiGet('getProducts');
+      state.loading = false;
+      if (res.success) state.products = res.data || [];
+      else toast(res.message || 'Failed to load products');
+      render();
+    }
+
+    function renderProducts() {
+      if (state.products.length === 0 && !state.loading) loadProducts();
+
+      return `
+        ${header('Products')}
+        <main class="px-4 pt-4 space-y-3 fade-in">
+          ${state.loading ? `<p class="text-center text-muted py-10">Loading...</p>` : ''}
+          ${state.products.map(p => `
+            <div class="bg-card border border-border rounded-xl p-4">
+              <div class="flex items-center gap-3 mb-2">
+                <div class="text-3xl">${p.icon || '📦'}</div>
+                <div>
+                  <div class="font-medium">${p.name}</div>
+                  <div class="text-xs text-muted">v${p.version} · ${p.price} ETB</div>
+                </div>
+              </div>
+              <p class="text-sm text-slate-300 mb-3">${p.description || ''}</p>
+              <button onclick="downloadApk('${p.code}')" class="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold">
+                ⬇ Download APK
+              </button>
+            </div>
+          `).join('') || (!state.loading ? `<p class="text-center text-muted py-10">No products found</p>` : '')}
+        </main>
+        ${bottomNav('products')}`;
+    }
+
+    async function downloadApk(code) {
+      toast('Getting link...');
+      const res = await apiGet('getApkLink', { productCode: code });
+      if (res.success && res.data?.downloadUrl) {
+        window.open(res.data.downloadUrl, '_blank');
+      } else {
+        toast(res.message || 'Download not available');
+      }
+    }
+
+    // ================= LICENSE =================
+    function renderLicense() {
+      if (!state.buyStep) state.buyStep = 'key';
+
+      if (state.buyStep === 'key') return renderLicenseKey();
+      if (state.buyStep === 'confirm') return renderLicenseConfirm();
+      if (state.buyStep === 'payment') return renderLicensePayment();
+      if (state.buyStep === 'txn') return renderLicenseTxn();
+      if (state.buyStep === 'done') return renderLicenseDone();
+      return renderLicenseKey();
+    }
+
+    function renderLicenseKey() {
+      return `
+        ${header('Buy License')}
+        <main class="px-4 pt-6 pb-32 space-y-5 fade-in">
+          <div class="text-center">
+            <div class="text-4xl mb-2">🔑</div>
+            <p class="text-sm text-slate-300">Enter your Product Key</p>
+          </div>
+          <input type="text" value="${state.productKey}" oninput="state.productKey=this.value"
+            placeholder="e.g. 178D4F76"
+            class="w-full bg-bg border border-border rounded-lg px-3 py-3 text-sm mono" />
+        </main>
+        <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
+          <button onclick="resolveKey()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Continue</button>
+        </div>
+        ${bottomNav('license')}`;
+    }
+
+    async function resolveKey() {
+      if (!state.productKey.trim()) return toast('Enter Product Key');
+      toast('Checking...');
+      const res = await apiPost('resolveKey', { productKey: state.productKey.trim() });
+      if (!res.success) return toast(res.message || 'Invalid key');
+      state.resolvedKey = res.data;
+      state.buyStep = 'confirm';
+      render();
+    }
+
+    function renderLicenseConfirm() {
+      const d = state.resolvedKey;
+      return `
+        ${header('Confirm', "state.buyStep='key';render()")}
+        <main class="px-4 pt-6 pb-32 space-y-4 fade-in">
+          <div class="bg-card border border-border rounded-xl p-4 space-y-3 text-sm">
+            <div class="flex justify-between"><span class="text-muted">Product</span><span>${d.productName}</span></div>
+            <div class="flex justify-between"><span class="text-muted">Product Key</span><span class="mono">${d.productKey}</span></div>
+            <div class="flex justify-between pt-2 border-t border-border">
+              <span class="text-muted">Price</span>
+              <span class="text-emerald-400 font-bold text-lg">${d.price} ETB</span>
+            </div>
+          </div>
+        </main>
+        <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
+          <button onclick="state.buyStep='payment';render()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Continue to Payment</button>
+        </div>
+        ${bottomNav('license')}`;
+    }
+
+    function renderLicensePayment() {
+      return `
+        ${header('Payment', "state.buyStep='confirm';render()")}
+        <main class="px-4 pt-6 pb-32 space-y-3 fade-in">
+          <button onclick="selectPayment('BANK')" class="w-full p-4 rounded-xl border text-left ${state.paymentMode==='BANK'?'border-emerald-500 bg-card':'border-border'}">
+            🏦 Bank Transfer
+          </button>
+          <button onclick="selectPayment('TELEBIRR')" class="w-full p-4 rounded-xl border text-left ${state.paymentMode==='TELEBIRR'?'border-emerald-500 bg-card':'border-border'}">
+            📱 Telebirr
+          </button>
+          <div id="payDetails" class="mt-4"></div>
+        </main>
+        <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
+          <button onclick="goToTxn()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">I Have Paid</button>
+        </div>
+        ${bottomNav('license')}`;
+    }
+
+    async function selectPayment(mode) {
+      state.paymentMode = mode;
+      render();
+      const res = await apiGet('getPaymentMethods', { productCode: state.resolvedKey.productCode });
+      if (res.success) {
+        const options = res.data.filter(o => o.mode === mode);
+        let html = '<div class="bg-card border border-border rounded-xl p-4 text-sm space-y-3">';
+        options.forEach(o => {
+          if (mode === 'BANK') {
+            html += `<div><div class="font-medium">${o.bank}</div><div class="text-muted text-xs">${o.accountName}</div><div class="mono">${o.accountNumber}</div></div>`;
+          } else {
+            html += `<div class="mono text-lg">${o.wallet}</div>`;
+          }
+        });
+        html += '</div>';
+        document.getElementById('payDetails').innerHTML = html;
+      }
+    }
+
+    function goToTxn() {
+      if (!state.paymentMode) return toast('Select payment method');
+      state.buyStep = 'txn';
+      render();
+    }
+
+    function renderLicenseTxn() {
+      return `
+        ${header('Transaction', "state.buyStep='payment';render()")}
+        <main class="px-4 pt-6 pb-32 space-y-4 fade-in">
+          <p class="text-sm text-slate-300">Enter Transaction Number</p>
+          <input type="text" value="${state.txnNumber}" oninput="state.txnNumber=this.value"
+            placeholder="TXN number" class="w-full bg-bg border border-border rounded-lg px-3 py-3 text-sm mono" />
+        </main>
+        <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
+          <button onclick="submitOrder()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Submit Order</button>
+        </div>
+        ${bottomNav('license')}`;
+    }
+
+    async function submitOrder() {
+      if (!state.txnNumber.trim()) return toast('Enter transaction number');
+      toast('Submitting...');
+      const res = await apiPost('createOrder', {
+        chatId: state.user.chatId,
+        phone: state.user.phone,
+        productKey: state.productKey,
+        productCode: state.resolvedKey.productCode,
+        paymentMode: state.paymentMode,
+        txnNumber: state.txnNumber.trim()
+      });
+      if (!res.success) return toast(res.message || 'Failed');
+      state.currentOrderId = res.data.orderId;
+      state.buyStep = 'done';
+      render();
+    }
+
+    function renderLicenseDone() {
+      return `
+        ${header('Submitted')}
+        <main class="px-4 pt-10 text-center space-y-3 fade-in">
+          <div class="text-5xl">⏳</div>
+          <h2 class="text-lg font-semibold">Order Submitted</h2>
+          <p class="text-sm text-muted">Order ID: <span class="mono">${state.currentOrderId}</span></p>
+          <p class="text-sm text-muted">Wait for admin approval. License key will appear in Profile.</p>
+        </main>
+        <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
+          <button onclick="state.buyStep=null;navigate('profile')" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Go to Profile</button>
+        </div>
+        ${bottomNav('license')}`;
+    }
+
+    // ================= PROFILE =================
+    function renderProfile() {
+      return `
+        ${header('Profile')}
+        <main class="px-4 pt-4 space-y-4 fade-in">
+          ${!state.user.registered ? `
+            <div class="bg-card border border-border rounded-xl p-4 space-y-3">
+              <h2 class="font-semibold">Registration Required</h2>
+              <input type="text" placeholder="Full Name" value="${state.regName}" oninput="state.regName=this.value"
+                class="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm" />
+              <input type="tel" placeholder="Phone Number" value="${state.regPhone}" oninput="state.regPhone=this.value"
+                class="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm" />
+              <button onclick="register()" class="w-full py-2.5 rounded-lg bg-emerald-500 text-white font-medium">
+                Register
+              </button>
+            </div>
+          ` : `
+            <div class="bg-card border border-border rounded-xl p-4">
+              <div class="font-semibold">${state.user.name}</div>
+              <div class="text-xs text-muted mono mt-1">Chat ID: ${state.user.chatId}</div>
+              <div class="text-sm text-emerald-400 mt-2">✅ Registered</div>
+            </div>
+          `}
+
+          <div>
+            <h2 class="text-xs uppercase text-muted mb-2">My Licenses</h2>
+            <div id="licensesList" class="text-sm text-muted">Loading...</div>
+          </div>
+
+          <div>
+            <h2 class="text-xs uppercase text-muted mb-2">My Orders</h2>
+            <div id="ordersList" class="text-sm text-muted">Loading...</div>
+          </div>
+        </main>
+        ${bottomNav('profile')}`;
+    }
+
+    async function register() {
+      if (!state.regName.trim() || !state.regPhone.trim()) return toast('Enter name and phone');
+      if (!state.user.chatId) return toast('Telegram ID not found');
+
+      toast('Registering...');
+      const res = await apiPost('register', {
+        chatId: state.user.chatId,
+        name: state.regName.trim(),
+        phone: state.regPhone.trim()
+      });
+
+      if (res.success) {
+        state.user.registered = true;
+        state.user.name = state.regName.trim();
+        state.user.phone = state.regPhone.trim();
+        toast(`Registered! User: ${res.data.username} / Pass: ${res.data.password}`);
+        render();
+      } else {
+        toast(res.message || 'Registration failed');
+      }
+    }
+
+    async function loadProfileData() {
+      if (!state.user.chatId) return;
+      const [orders, licenses] = await Promise.all([
+        apiGet('getMyOrders', { chatId: state.user.chatId }),
+        apiGet('getMyLicenses', { chatId: state.user.chatId })
+      ]);
+
+      const ordersEl = document.getElementById('ordersList');
+      const licensesEl = document.getElementById('licensesList');
+
+      if (ordersEl) {
+        if (orders.success && orders.data.length) {
+          ordersEl.innerHTML = orders.data.map(o => `
+            <div class="bg-card border border-border rounded-xl p-3 mb-2">
+              <div class="flex justify-between text-sm">
+                <span>${o.productCode}</span>
+                <span class="${o.status==='APPROVED'?'text-emerald-400':o.status==='REJECTED'?'text-red-400':'text-amber-400'}">${o.status}</span>
+              </div>
+              <div class="text-xs text-muted mt-1">Txn: ${o.txnNumber}</div>
+            </div>
+          `).join('');
+        } else {
+          ordersEl.innerHTML = `<div class="bg-card border border-border rounded-xl p-4 text-center">No orders yet</div>`;
+        }
+      }
+
+      if (licensesEl) {
+        if (licenses.success && licenses.data.length) {
+          licensesEl.innerHTML = licenses.data.map(l => `
+            <div class="bg-card border border-border rounded-xl p-3 mb-2">
+              <div class="font-medium text-sm">${l.productCode}</div>
+              <div class="text-xs text-muted">Key: ${l.productKey}</div>
+              <div class="mono text-emerald-400 mt-1">${l.licenseKey}</div>
+            </div>
+          `).join('');
+        } else {
+          licensesEl.innerHTML = `<div class="bg-card border border-border rounded-xl p-4 text-center">No licenses yet</div>`;
+        }
+      }
+    }
+
+    // ================= RENDER =================
+    function render() {
+      const map = {
+        home: renderHome,
+        products: renderProducts,
+        license: renderLicense,
+        profile: renderProfile
+      };
+      document.getElementById('app').innerHTML = (map[state.route] || renderHome)();
+      if (state.route === 'profile') loadProfileData();
+    }
+
+    render();
+  </script>
+</body>
+</html>
