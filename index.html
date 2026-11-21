@@ -3,486 +3,793 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>PIS License Store</title>
+  <title>PIS License Store · 4‑Page</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            bg: '#0F172A',
-            card: '#1E293B',
-            border: '#334155',
-            muted: '#94A3B8',
-          }
-        }
-      }
+      theme: { extend: { colors: {
+        bg:'#0F172A', card:'#1E293B', border:'#334155', muted:'#94A3B8', accent:'#10B981',
+      }}},
     };
   </script>
   <style>
-    html, body { background: #0F172A; color: #F1F5F9; -webkit-tap-highlight-color: transparent; }
-    ::-webkit-scrollbar { display: none; }
+    html, body { background:#0F172A; color:#F1F5F9; -webkit-tap-highlight-color:transparent; }
+    ::-webkit-scrollbar { display:none; }
     .fade-in { animation: fadeIn .25s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-    .mono { font-family: ui-monospace, monospace; letter-spacing: 0.5px; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:none;} }
+    .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; letter-spacing:1px; }
+    input, button { -webkit-appearance:none; outline:none; }
+    .ad-banner { background: linear-gradient(145deg, #1E293B, #0F172A); border:1px solid #334155; }
+    .product-icon { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
   </style>
 </head>
 <body class="font-sans antialiased">
 
-  <div id="app" class="max-w-md mx-auto min-h-screen pb-20"></div>
+  <div id="app" class="max-w-md mx-auto min-h-screen pb-20 relative"></div>
   <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-card border border-border px-4 py-2 rounded-lg text-sm opacity-0 pointer-events-none transition-opacity z-50"></div>
 
   <script>
-    // ================= CONFIG =================
-    const API_URL = "https://script.google.com/macros AKfycbyWz6BbNYh0FFazEd0kbGBaGFEzs8G4s4O7ljMZUrgGJKR-bZu-8bfeslI3hLqEsGbwpw/exec";
+  // ============================================================
+  // MOCK DATA
+  // ------------------------------------------------------------
+  // Each product has:
+  //   icon    → emoji fallback (used if iconUrl is missing)
+  //   iconUrl → optional image URL for the product icon
+  //   plans[] → each plan has its own apkUrl + apkName
+  // ============================================================
+  const PRODUCTS = [
+    {
+      code:'PHARM_POS', name:'Pharmacy POS', icon:'💊', iconUrl:'', version:'2.1.0', rating:4.8,
+      description:'Point-of-sale for pharmacies. Inventory, prescriptions, and reporting built in.',
+      featured:true,
+      plans:[
+        { term:'1y', name:'1 Year',  years:1, price: 350,  stock:50,
+          apkUrl:'https://example.com/pharmacy-pos-1y.apk', apkName:'PharmacyPOS-1Year-v2.1.0.apk' },
+        { term:'3y', name:'3 Years', years:3, price: 900,  stock:30,
+          apkUrl:'https://example.com/pharmacy-pos-3y.apk', apkName:'PharmacyPOS-3Year-v2.1.0.apk' },
+        { term:'5y', name:'5 Years', years:5, price: 1400, stock:15,
+          apkUrl:'https://example.com/pharmacy-pos-5y.apk', apkName:'PharmacyPOS-5Year-v2.1.0.apk' },
+      ],
+    },
+    {
+      code:'CLINIC_POS', name:'Clinic POS', icon:'🏥', iconUrl:'', version:'1.4.2', rating:4.6,
+      description:'Point-of-sale for clinics. Patient records, appointments, and billing.',
+      featured:true,
+      plans:[
+        { term:'1y', name:'1 Year',  years:1, price: 450,  stock:40,
+          apkUrl:'https://example.com/clinic-pos-1y.apk', apkName:'ClinicPOS-1Year-v1.4.2.apk' },
+        { term:'3y', name:'3 Years', years:3, price: 1200, stock:25,
+          apkUrl:'https://example.com/clinic-pos-3y.apk', apkName:'ClinicPOS-3Year-v1.4.2.apk' },
+        { term:'5y', name:'5 Years', years:5, price: 1800, stock:10,
+          apkUrl:'https://example.com/clinic-pos-5y.apk', apkName:'ClinicPOS-5Year-v1.4.2.apk' },
+      ],
+    },
+  ];
 
+  const PAYMENT_METHODS = [
+    { productCode:'PHARM_POS',  mode:'BANK',     bank:'Commercial Bank of Ethiopia', accountName:'PIS License', accountNumber:'1000123456789', wallet:'' },
+    { productCode:'PHARM_POS',  mode:'BANK',     bank:'Awash Bank',                  accountName:'PIS License', accountNumber:'0132012345678', wallet:'' },
+    { productCode:'PHARM_POS',  mode:'TELEBIRR', bank:'',                           accountName:'',           accountNumber:'',              wallet:'0911223344' },
+    { productCode:'CLINIC_POS', mode:'BANK',     bank:'Commercial Bank of Ethiopia', accountName:'PIS License', accountNumber:'1000987654321', wallet:'' },
+    { productCode:'CLINIC_POS', mode:'TELEBIRR', bank:'',                           accountName:'',           accountNumber:'',              wallet:'0911556677' },
+  ];
 
-    // ================= STATE =================
-    const state = {
-      route: 'home',
-      user: {
-        chatId: null,
-        name: '',
-        phone: '',
-        registered: false
-      },
-      products: [],
-      buyStep: null,
-      productKey: '',
-      resolvedKey: null,
-      paymentMode: null,
-      paymentOptions: [],
-      txnNumber: '',
-      currentOrderId: null,
-      myOrders: [],
-      myLicenses: [],
-      regName: '',
-      regPhone: '',
-      loading: false
-    };
+  // Product Key registry: maps Product ID → { productCode, term }
+  const PRODUCT_KEY_REGISTRY = {
+    'PH-PID-001': { productCode:'PHARM_POS',  term:'1y' },
+    'PH-PID-002': { productCode:'PHARM_POS',  term:'3y' },
+    'PH-PID-003': { productCode:'PHARM_POS',  term:'5y' },
+    'CL-PID-001': { productCode:'CLINIC_POS', term:'1y' },
+    'CL-PID-002': { productCode:'CLINIC_POS', term:'3y' },
+    'CL-PID-003': { productCode:'CLINIC_POS', term:'5y' },
+  };
 
-    // ================= TELEGRAM =================
-    if (window.Telegram?.WebApp) {
-      const tg = Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-      tg.setHeaderColor('#0F172A');
-      state.user.chatId = tg.initDataUnsafe?.user?.id?.toString() || null;
+  let SOLD_LICENSES = [
+    { customerId:'CUST-AB12CD34', chatId:'661530266', phone:'0911223344',
+      productCode:'PHARM_POS',
+      years:[ { key:'PH-1A2B-3C4D-5E6F', assignedAt:'2024-11-01' }, null, null, null, null ] },
+  ];
+
+  let PENDING_ORDERS = [
+    { orderId:'ORD-1700000000001', chatId:'661530266', phone:'0911223344',
+      productCode:'CLINIC_POS', planTerm:'3y', productId:'CL-PID-002',
+      paymentMode:'BANK', txn:'TXN-99887', status:'PENDING', date:'2025-11-10' },
+    { orderId:'ORD-1700000000000', chatId:'661530266', phone:'0911223344',
+      productCode:'PHARM_POS', planTerm:'1y', productId:'PH-PID-001',
+      paymentMode:'TELEBIRR', txn:'TXN-11111', status:'APPROVED', date:'2024-11-01' },
+  ];
+
+  let USER = {
+    chatId:'661530266', registered:true,
+    name:'Abebe Bekele', phone:'0911223344',
+    username:'admin', password:'0000',
+  };
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  const state = {
+    route: 'home',
+    productCode: null,
+    selectedPlanTerm: null,   // NEW: which plan's APK is selected on the product detail
+
+    // license / buy flow
+    buyStep: null,
+    buyKey: '',
+    buyProductCode: null,
+    buyTerm: null,
+    buyPaymentMode: null,
+    buyTxn: '',
+    buyOrderId: null,
+
+    // profile register
+    regStep: null, regProductCode:null, regProductId:'', regName:'', regPhone:'',
+    _showPwd: false,
+  };
+
+  const app = document.getElementById('app');
+  function navigate(route, opts={}) { Object.assign(state, opts); state.route = route; window.scrollTo(0,0); render(); }
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  const fmtDate = iso => new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const fmtETB  = n => `${Number(n).toLocaleString()} ETB`;
+  const productByCode = c => PRODUCTS.find(p=>p.code===c);
+  const planOf = (p,t) => p && p.plans.find(x=>x.term===t);
+  const lowestPrice = p => Math.min(...p.plans.map(x=>x.price));
+
+  function resolveKey(key) {
+    const trimmed = (key||'').trim();
+    const entry = PRODUCT_KEY_REGISTRY[trimmed];
+    if (!entry) return null;
+    const product = productByCode(entry.productCode);
+    const plan = planOf(product, entry.term);
+    if (!product || !plan) return null;
+    return { product, plan, key: trimmed };
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.style.opacity='1';
+    clearTimeout(t._t); t._t = setTimeout(()=>t.style.opacity='0',1800);
+  }
+  function genKey(prefix) {
+    const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const s=()=>Array.from({length:4},()=>c[Math.floor(Math.random()*c.length)]).join('');
+    return `${prefix||'KEY'}-${s()}-${s()}-${s()}`;
+  }
+  const genOrderId = () => 'ORD-'+Date.now();
+
+  // Render a product icon: use iconUrl image if present, otherwise emoji
+  function productIcon(p, sizeClass='text-2xl') {
+    if (p && p.iconUrl) {
+      return `<img src="${p.iconUrl}" alt="${p.name||''}" class="product-icon" />`;
     }
+    return `<span class="${sizeClass}">${p?.icon || '📦'}</span>`;
+  }
 
-    // ================= API =================
-    async function apiGet(action, params = {}) {
-      const url = new URL(API_URL);
-      url.searchParams.set('action', action);
-      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-      const res = await fetch(url.toString());
-      return res.json();
-    }
+  // ============================================================
+  // SHARED UI
+  // ============================================================
+  function bottomNav(active) {
+    const items = [
+      { key:'home',     to:'home',     icon:'🏠', label:'Home' },
+      { key:'products', to:'products', icon:'🛍', label:'Products' },
+      { key:'license',  to:'license',  icon:'🔑', label:'License' },
+      { key:'profile',  to:'profile',  icon:'👤', label:'Profile' },
+    ];
+    return `<nav class="fixed bottom-0 inset-x-0 max-w-md mx-auto bg-card border-t border-border flex z-40">
+      ${items.map(i=>`<button onclick="navigate('${i.to}')" class="flex-1 py-3 text-center text-xs ${active===i.key?'text-emerald-400':'text-muted'}">
+        <div class="text-lg leading-none mb-1">${i.icon}</div><div>${i.label}</div></button>`).join('')}
+    </nav>`;
+  }
 
-    async function apiPost(action, body = {}) {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action, ...body })
-      });
-      return res.json();
-    }
+  function header(title, opts={}) {
+    return `<header class="sticky top-0 z-30 bg-bg/95 backdrop-blur border-b border-border">
+      <div class="flex items-center px-4 h-14 gap-3">
+        ${opts.back ? `<button onclick="${opts.back}" class="text-2xl leading-none">←</button>` : ''}
+        <h1 class="font-semibold text-base">${title}</h1>
+        ${opts.right ? `<div class="ml-auto">${opts.right}</div>` : ''}
+      </div>
+      ${opts.sub ? `<div class="px-4 pb-3 -mt-1 text-muted text-xs">${opts.sub}</div>` : ''}
+    </header>`;
+  }
 
-    function toast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.style.opacity = '1';
-      clearTimeout(t._t);
-      t._t = setTimeout(() => t.style.opacity = '0', 2200);
-    }
+  function field(label, value, onChange, type='text', placeholder='') {
+    return `<div>
+      <label class="text-xs uppercase tracking-wider text-muted block mb-1">${label}</label>
+      <input type="${type}" value="${value}" placeholder="${placeholder}" oninput="${onChange}"
+        class="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm focus:border-emerald-500 mono" />
+    </div>`;
+  }
 
-    // ================= NAVIGATION =================
-    function navigate(route) {
-      // Force registration
-      if (!state.user.registered && route !== 'profile' && route !== 'home') {
-        toast('Please register first');
-        state.route = 'profile';
-        render();
-        return;
-      }
-      state.route = route;
-      window.scrollTo(0, 0);
-      render();
-    }
+  // ============================================================
+  // HOME — ads page
+  // ============================================================
+  function renderHome() {
+    const featured = PRODUCTS.filter(p=>p.featured);
+    return `
+      ${header('📢 PIS Ads & Updates', { sub:'Promotions, news & featured apps' })}
+      <main class="px-4 pt-4 space-y-6 fade-in">
 
-    // ================= UI HELPERS =================
-    function bottomNav(active) {
-      const items = [
-        { key: 'home', icon: '🏠', label: 'Home' },
-        { key: 'products', icon: '🛍', label: 'Products' },
-        { key: 'license', icon: '🔑', label: 'License' },
-        { key: 'profile', icon: '👤', label: 'Profile' }
-      ];
-      return `
-        <nav class="fixed bottom-0 inset-x-0 max-w-md mx-auto bg-card border-t border-border flex z-40">
-          ${items.map(i => `
-            <button onclick="navigate('${i.key}')" class="flex-1 py-3 text-center text-xs ${active === i.key ? 'text-emerald-400' : 'text-muted'}">
-              <div class="text-lg mb-0.5">${i.icon}</div>
-              <div>${i.label}</div>
-            </button>
-          `).join('')}
-        </nav>`;
-    }
-
-    function header(title, back = null) {
-      return `
-        <header class="sticky top-0 z-30 bg-bg/95 backdrop-blur border-b border-border">
-          <div class="flex items-center px-4 h-14 gap-3">
-            ${back ? `<button onclick="${back}" class="text-2xl">←</button>` : ''}
-            <h1 class="font-semibold">${title}</h1>
+        <section>
+          <div class="ad-banner rounded-2xl p-5 text-center">
+            <div class="text-3xl mb-2">🎉</div>
+            <h2 class="text-lg font-bold text-emerald-400">Limited Offer</h2>
+            <p class="text-sm text-slate-300 mt-1">Get 15% off any 3‑year license this month. Use code <span class="mono text-emerald-400">PIS15</span></p>
+            <button onclick="navigate('products')" class="mt-3 px-5 py-2 rounded-lg bg-emerald-500 text-white text-sm font-semibold">Explore Products</button>
           </div>
-        </header>`;
-    }
+        </section>
 
-    // ================= HOME =================
-    function renderHome() {
-      return `
-        ${header('PIS License Store')}
-        <main class="px-4 pt-6 space-y-5 fade-in">
-          <div class="bg-card border border-border rounded-2xl p-5 text-center">
-            <div class="text-4xl mb-2">🔐</div>
-            <h2 class="text-lg font-bold text-emerald-400">License Activation</h2>
-            <p class="text-sm text-slate-300 mt-2">Register first, then buy your license key.</p>
-          </div>
-
-          ${!state.user.registered ? `
-            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-sm text-amber-300">
-              ⚠️ You need to register before buying a license.
-              <button onclick="navigate('profile')" class="block w-full mt-3 py-2 rounded-lg bg-amber-500 text-black font-medium">
-                Register Now
-              </button>
-            </div>
-          ` : `
-            <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-sm text-emerald-300">
-              ✅ Registered as ${state.user.name}
-            </div>
-          `}
-
-          <div class="bg-card border border-border rounded-xl p-4 text-sm text-muted space-y-1">
-            <p class="font-medium text-slate-300 mb-2">How it works:</p>
-            <p>1. Register your account</p>
-            <p>2. Download the APK</p>
-            <p>3. Buy license with Product Key</p>
-            <p>4. Receive License Key after approval</p>
-          </div>
-        </main>
-        ${bottomNav('home')}`;
-    }
-
-    // ================= PRODUCTS =================
-    async function loadProducts() {
-      state.loading = true;
-      render();
-      const res = await apiGet('getProducts');
-      state.loading = false;
-      if (res.success) state.products = res.data || [];
-      else toast(res.message || 'Failed to load products');
-      render();
-    }
-
-    function renderProducts() {
-      if (state.products.length === 0 && !state.loading) loadProducts();
-
-      return `
-        ${header('Products')}
-        <main class="px-4 pt-4 space-y-3 fade-in">
-          ${state.loading ? `<p class="text-center text-muted py-10">Loading...</p>` : ''}
-          ${state.products.map(p => `
-            <div class="bg-card border border-border rounded-xl p-4">
-              <div class="flex items-center gap-3 mb-2">
-                <div class="text-3xl">${p.icon || '📦'}</div>
-                <div>
-                  <div class="font-medium">${p.name}</div>
-                  <div class="text-xs text-muted">v${p.version} · ${p.price} ETB</div>
+        <section>
+          <h2 class="text-xs uppercase tracking-wider text-muted mb-2">Featured apps</h2>
+          <div class="flex gap-3 overflow-x-auto pb-1">
+            ${featured.map(p=>`
+              <button onclick="navigate('products',{productCode:'${p.code}', selectedPlanTerm:null})"
+                class="shrink-0 w-36 text-left p-3 bg-card rounded-xl border border-border active:scale-[0.98] transition">
+                <div class="w-10 h-10 rounded-lg bg-bg flex items-center justify-center overflow-hidden mb-2">
+                  ${productIcon(p, 'text-2xl')}
                 </div>
-              </div>
-              <p class="text-sm text-slate-300 mb-3">${p.description || ''}</p>
-              <button onclick="downloadApk('${p.code}')" class="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold">
-                ⬇ Download APK
-              </button>
-            </div>
-          `).join('') || (!state.loading ? `<p class="text-center text-muted py-10">No products found</p>` : '')}
-        </main>
-        ${bottomNav('products')}`;
-    }
-
-    async function downloadApk(code) {
-      toast('Getting link...');
-      const res = await apiGet('getApkLink', { productCode: code });
-      if (res.success && res.data?.downloadUrl) {
-        window.open(res.data.downloadUrl, '_blank');
-      } else {
-        toast(res.message || 'Download not available');
-      }
-    }
-
-    // ================= LICENSE =================
-    function renderLicense() {
-      if (!state.buyStep) state.buyStep = 'key';
-
-      if (state.buyStep === 'key') return renderLicenseKey();
-      if (state.buyStep === 'confirm') return renderLicenseConfirm();
-      if (state.buyStep === 'payment') return renderLicensePayment();
-      if (state.buyStep === 'txn') return renderLicenseTxn();
-      if (state.buyStep === 'done') return renderLicenseDone();
-      return renderLicenseKey();
-    }
-
-    function renderLicenseKey() {
-      return `
-        ${header('Buy License')}
-        <main class="px-4 pt-6 pb-32 space-y-5 fade-in">
-          <div class="text-center">
-            <div class="text-4xl mb-2">🔑</div>
-            <p class="text-sm text-slate-300">Enter your Product Key</p>
+                <div class="font-medium text-sm truncate">${p.name}</div>
+                <div class="text-emerald-400 text-sm mt-0.5">from ${fmtETB(lowestPrice(p))}</div>
+              </button>`).join('')}
           </div>
-          <input type="text" value="${state.productKey}" oninput="state.productKey=this.value"
-            placeholder="e.g. 178D4F76"
-            class="w-full bg-bg border border-border rounded-lg px-3 py-3 text-sm mono" />
-        </main>
-        <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
-          <button onclick="resolveKey()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Continue</button>
-        </div>
-        ${bottomNav('license')}`;
-    }
+        </section>
 
-    async function resolveKey() {
-      if (!state.productKey.trim()) return toast('Enter Product Key');
-      toast('Checking...');
-      const res = await apiPost('resolveKey', { productKey: state.productKey.trim() });
-      if (!res.success) return toast(res.message || 'Invalid key');
-      state.resolvedKey = res.data;
-      state.buyStep = 'confirm';
-      render();
-    }
-
-    function renderLicenseConfirm() {
-      const d = state.resolvedKey;
-      return `
-        ${header('Confirm', "state.buyStep='key';render()")}
-        <main class="px-4 pt-6 pb-32 space-y-4 fade-in">
-          <div class="bg-card border border-border rounded-xl p-4 space-y-3 text-sm">
-            <div class="flex justify-between"><span class="text-muted">Product</span><span>${d.productName}</span></div>
-            <div class="flex justify-between"><span class="text-muted">Product Key</span><span class="mono">${d.productKey}</span></div>
-            <div class="flex justify-between pt-2 border-t border-border">
-              <span class="text-muted">Price</span>
-              <span class="text-emerald-400 font-bold text-lg">${d.price} ETB</span>
-            </div>
-          </div>
-        </main>
-        <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
-          <button onclick="state.buyStep='payment';render()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Continue to Payment</button>
-        </div>
-        ${bottomNav('license')}`;
-    }
-
-    function renderLicensePayment() {
-      return `
-        ${header('Payment', "state.buyStep='confirm';render()")}
-        <main class="px-4 pt-6 pb-32 space-y-3 fade-in">
-          <button onclick="selectPayment('BANK')" class="w-full p-4 rounded-xl border text-left ${state.paymentMode==='BANK'?'border-emerald-500 bg-card':'border-border'}">
-            🏦 Bank Transfer
-          </button>
-          <button onclick="selectPayment('TELEBIRR')" class="w-full p-4 rounded-xl border text-left ${state.paymentMode==='TELEBIRR'?'border-emerald-500 bg-card':'border-border'}">
-            📱 Telebirr
-          </button>
-          <div id="payDetails" class="mt-4"></div>
-        </main>
-        <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
-          <button onclick="goToTxn()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">I Have Paid</button>
-        </div>
-        ${bottomNav('license')}`;
-    }
-
-    async function selectPayment(mode) {
-      state.paymentMode = mode;
-      render();
-      const res = await apiGet('getPaymentMethods', { productCode: state.resolvedKey.productCode });
-      if (res.success) {
-        const options = res.data.filter(o => o.mode === mode);
-        let html = '<div class="bg-card border border-border rounded-xl p-4 text-sm space-y-3">';
-        options.forEach(o => {
-          if (mode === 'BANK') {
-            html += `<div><div class="font-medium">${o.bank}</div><div class="text-muted text-xs">${o.accountName}</div><div class="mono">${o.accountNumber}</div></div>`;
-          } else {
-            html += `<div class="mono text-lg">${o.wallet}</div>`;
-          }
-        });
-        html += '</div>';
-        document.getElementById('payDetails').innerHTML = html;
-      }
-    }
-
-    function goToTxn() {
-      if (!state.paymentMode) return toast('Select payment method');
-      state.buyStep = 'txn';
-      render();
-    }
-
-    function renderLicenseTxn() {
-      return `
-        ${header('Transaction', "state.buyStep='payment';render()")}
-        <main class="px-4 pt-6 pb-32 space-y-4 fade-in">
-          <p class="text-sm text-slate-300">Enter Transaction Number</p>
-          <input type="text" value="${state.txnNumber}" oninput="state.txnNumber=this.value"
-            placeholder="TXN number" class="w-full bg-bg border border-border rounded-lg px-3 py-3 text-sm mono" />
-        </main>
-        <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
-          <button onclick="submitOrder()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Submit Order</button>
-        </div>
-        ${bottomNav('license')}`;
-    }
-
-    async function submitOrder() {
-      if (!state.txnNumber.trim()) return toast('Enter transaction number');
-      toast('Submitting...');
-      const res = await apiPost('createOrder', {
-        chatId: state.user.chatId,
-        phone: state.user.phone,
-        productKey: state.productKey,
-        productCode: state.resolvedKey.productCode,
-        paymentMode: state.paymentMode,
-        txnNumber: state.txnNumber.trim()
-      });
-      if (!res.success) return toast(res.message || 'Failed');
-      state.currentOrderId = res.data.orderId;
-      state.buyStep = 'done';
-      render();
-    }
-
-    function renderLicenseDone() {
-      return `
-        ${header('Submitted')}
-        <main class="px-4 pt-10 text-center space-y-3 fade-in">
-          <div class="text-5xl">⏳</div>
-          <h2 class="text-lg font-semibold">Order Submitted</h2>
-          <p class="text-sm text-muted">Order ID: <span class="mono">${state.currentOrderId}</span></p>
-          <p class="text-sm text-muted">Wait for admin approval. License key will appear in Profile.</p>
-        </main>
-        <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
-          <button onclick="state.buyStep=null;navigate('profile')" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Go to Profile</button>
-        </div>
-        ${bottomNav('license')}`;
-    }
-
-    // ================= PROFILE =================
-    function renderProfile() {
-      return `
-        ${header('Profile')}
-        <main class="px-4 pt-4 space-y-4 fade-in">
-          ${!state.user.registered ? `
-            <div class="bg-card border border-border rounded-xl p-4 space-y-3">
-              <h2 class="font-semibold">Registration Required</h2>
-              <input type="text" placeholder="Full Name" value="${state.regName}" oninput="state.regName=this.value"
-                class="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm" />
-              <input type="tel" placeholder="Phone Number" value="${state.regPhone}" oninput="state.regPhone=this.value"
-                class="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm" />
-              <button onclick="register()" class="w-full py-2.5 rounded-lg bg-emerald-500 text-white font-medium">
-                Register
-              </button>
-            </div>
-          ` : `
+        <section>
+          <h2 class="text-xs uppercase tracking-wider text-muted mb-2">Latest news</h2>
+          <div class="space-y-3">
             <div class="bg-card border border-border rounded-xl p-4">
-              <div class="font-semibold">${state.user.name}</div>
-              <div class="text-xs text-muted mono mt-1">Chat ID: ${state.user.chatId}</div>
-              <div class="text-sm text-emerald-400 mt-2">✅ Registered</div>
+              <div class="text-xs text-emerald-400 mb-1">📱 New release</div>
+              <div class="font-medium text-sm">Pharmacy POS v2.1.0 is here</div>
+              <p class="text-muted text-xs mt-1">Faster checkout, improved stock alerts, and a fresh dark theme.</p>
             </div>
-          `}
-
-          <div>
-            <h2 class="text-xs uppercase text-muted mb-2">My Licenses</h2>
-            <div id="licensesList" class="text-sm text-muted">Loading...</div>
+            <div class="bg-card border border-border rounded-xl p-4">
+              <div class="text-xs text-amber-400 mb-1">💡 Tip</div>
+              <div class="font-medium text-sm">Manage licenses from Profile</div>
+              <p class="text-muted text-xs mt-1">View, copy, and track your license keys in the Profile tab.</p>
+            </div>
+            <div class="bg-card border border-border rounded-xl p-4">
+              <div class="text-xs text-muted mb-1">📰 Announcement</div>
+              <div class="font-medium text-sm">We now accept Telebirr</div>
+              <p class="text-muted text-xs mt-1">Pay instantly via Telebirr on any license purchase.</p>
+            </div>
           </div>
+        </section>
+      </main>
+      ${bottomNav('home')}`;
+  }
 
-          <div>
-            <h2 class="text-xs uppercase text-muted mb-2">My Orders</h2>
-            <div id="ordersList" class="text-sm text-muted">Loading...</div>
+  // ============================================================
+  // PRODUCTS
+  // ============================================================
+  function renderProducts() {
+    if (state.productCode) return renderProductDetail();
+    return `
+      ${header('🛍 Products', { sub:'Apps & licenses for sale' })}
+      <main class="px-4 pt-4 space-y-5 fade-in">
+        <section>
+          <h2 class="text-xs uppercase tracking-wider text-muted mb-2">All apps</h2>
+          <div class="space-y-2">
+            ${PRODUCTS.map(p=>`
+              <button onclick="openProduct('${p.code}')"
+                class="w-full flex items-center gap-3 p-3 bg-card rounded-xl border border-border text-left active:scale-[0.99] transition">
+                <div class="w-12 h-12 rounded-lg bg-bg flex items-center justify-center overflow-hidden">
+                  ${productIcon(p, 'text-2xl')}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium truncate">${p.name}</div>
+                  <div class="text-muted text-xs">v${p.version} · ${p.plans.length} plans</div>
+                </div>
+                <div class="text-emerald-400 text-sm font-medium">${fmtETB(lowestPrice(p))}</div>
+              </button>`).join('')}
           </div>
-        </main>
-        ${bottomNav('profile')}`;
-    }
+        </section>
+        <section class="bg-card border border-border rounded-xl p-4 text-xs text-muted">
+          Tap a product to see its plans. Each plan has its own APK download.
+        </section>
+      </main>
+      ${bottomNav('products')}`;
+  }
 
-    async function register() {
-      if (!state.regName.trim() || !state.regPhone.trim()) return toast('Enter name and phone');
-      if (!state.user.chatId) return toast('Telegram ID not found');
-
-      toast('Registering...');
-      const res = await apiPost('register', {
-        chatId: state.user.chatId,
-        name: state.regName.trim(),
-        phone: state.regPhone.trim()
-      });
-
-      if (res.success) {
-        state.user.registered = true;
-        state.user.name = state.regName.trim();
-        state.user.phone = state.regPhone.trim();
-        toast(`Registered! User: ${res.data.username} / Pass: ${res.data.password}`);
-        render();
-      } else {
-        toast(res.message || 'Registration failed');
-      }
-    }
-
-    async function loadProfileData() {
-      if (!state.user.chatId) return;
-      const [orders, licenses] = await Promise.all([
-        apiGet('getMyOrders', { chatId: state.user.chatId }),
-        apiGet('getMyLicenses', { chatId: state.user.chatId })
-      ]);
-
-      const ordersEl = document.getElementById('ordersList');
-      const licensesEl = document.getElementById('licensesList');
-
-      if (ordersEl) {
-        if (orders.success && orders.data.length) {
-          ordersEl.innerHTML = orders.data.map(o => `
-            <div class="bg-card border border-border rounded-xl p-3 mb-2">
-              <div class="flex justify-between text-sm">
-                <span>${o.productCode}</span>
-                <span class="${o.status==='APPROVED'?'text-emerald-400':o.status==='REJECTED'?'text-red-400':'text-amber-400'}">${o.status}</span>
-              </div>
-              <div class="text-xs text-muted mt-1">Txn: ${o.txnNumber}</div>
-            </div>
-          `).join('');
-        } else {
-          ordersEl.innerHTML = `<div class="bg-card border border-border rounded-xl p-4 text-center">No orders yet</div>`;
-        }
-      }
-
-      if (licensesEl) {
-        if (licenses.success && licenses.data.length) {
-          licensesEl.innerHTML = licenses.data.map(l => `
-            <div class="bg-card border border-border rounded-xl p-3 mb-2">
-              <div class="font-medium text-sm">${l.productCode}</div>
-              <div class="text-xs text-muted">Key: ${l.productKey}</div>
-              <div class="mono text-emerald-400 mt-1">${l.licenseKey}</div>
-            </div>
-          `).join('');
-        } else {
-          licensesEl.innerHTML = `<div class="bg-card border border-border rounded-xl p-4 text-center">No licenses yet</div>`;
-        }
-      }
-    }
-
-    // ================= RENDER =================
-    function render() {
-      const map = {
-        home: renderHome,
-        products: renderProducts,
-        license: renderLicense,
-        profile: renderProfile
-      };
-      document.getElementById('app').innerHTML = (map[state.route] || renderHome)();
-      if (state.route === 'profile') loadProfileData();
-    }
-
+  // Open a product: reset any previously selected plan
+  function openProduct(code) {
+    state.productCode = code;
+    state.selectedPlanTerm = null;
+    window.scrollTo(0,0);
     render();
+  }
+
+  // Select a plan: reveals its download button
+  function selectPlan(term) {
+    state.selectedPlanTerm = term;
+    render();
+  }
+
+  // ============================================================
+  // PRODUCT DETAIL
+  // ============================================================
+  function renderProductDetail() {
+    const p = productByCode(state.productCode);
+    if (!p) { state.productCode = null; return renderProducts(); }
+
+    const totalStock = p.plans.reduce((s,pl)=>s+pl.stock,0);
+    const selectedPlan = state.selectedPlanTerm ? planOf(p, state.selectedPlanTerm) : null;
+
+    return `
+      ${header('', { back:"state.productCode=null; state.selectedPlanTerm=null; render()" })}
+      <main class="px-4 pt-2 pb-8 space-y-5 fade-in">
+        <div class="flex flex-col items-center text-center pt-2">
+          <div class="w-20 h-20 rounded-2xl bg-card border border-border flex items-center justify-center overflow-hidden mb-3">
+            ${productIcon(p, 'text-5xl')}
+          </div>
+          <h1 class="text-xl font-bold">${p.name}</h1>
+          <p class="text-muted text-sm">⭐ ${p.rating} · v${p.version}</p>
+        </div>
+
+        <div>
+          <h2 class="text-xs uppercase tracking-wider text-muted mb-1">About</h2>
+          <p class="text-slate-300 text-sm leading-relaxed">${p.description}</p>
+        </div>
+
+        <div>
+          <h2 class="text-xs uppercase tracking-wider text-muted mb-2">
+            Choose Plan <span class="text-muted">(${totalStock} available)</span>
+          </h2>
+          <div class="space-y-2">
+            ${p.plans.map(pl=>{
+              const isSelected = state.selectedPlanTerm === pl.term;
+              return `
+              <button onclick="selectPlan('${pl.term}')"
+                class="w-full flex items-center justify-between p-3 rounded-xl border text-left active:scale-[0.99] transition
+                       ${isSelected ? 'border-emerald-500 bg-card' : 'border-border bg-card'}">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center
+                              ${isSelected ? 'bg-emerald-500 text-white' : 'bg-bg border border-border text-muted'}">
+                    ${isSelected ? '✓' : pl.years}
+                  </div>
+                  <div>
+                    <div class="font-medium text-sm">${p.name}/${pl.term}</div>
+                    <div class="text-muted text-xs">${pl.name} · ${pl.stock} left</div>
+                  </div>
+                </div>
+                <div class="text-emerald-400 font-semibold">${fmtETB(pl.price)}</div>
+              </button>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- APK download appears only after a plan is selected -->
+        ${selectedPlan ? `
+          <div class="bg-card border border-emerald-500/60 rounded-xl p-4 space-y-3 fade-in">
+            <div class="flex items-center gap-2 text-xs text-muted">
+              <span class="text-emerald-400">📦</span>
+              Selected: <span class="text-slate-200 font-medium">${p.name}/${selectedPlan.term}</span>
+            </div>
+            <div class="text-xs text-muted mono break-all">${selectedPlan.apkName}</div>
+            <a href="${selectedPlan.apkUrl}" download="${selectedPlan.apkName}" target="_blank" rel="noreferrer"
+               class="block w-full py-3 text-center rounded-xl bg-emerald-500 text-white font-semibold active:scale-[0.99] transition">
+              ⬇ Download ${selectedPlan.name} APK
+            </a>
+          </div>` : `
+          <div class="bg-card border border-border rounded-xl p-4 text-xs text-muted text-center">
+            Select a plan above to unlock its APK download.
+          </div>`}
+
+        <button onclick="navigate('license',{buyStep:'key', buyKey:'', buyProductCode:null, buyTerm:null, buyPaymentMode:null, buyTxn:'', buyOrderId:null})"
+           class="block w-full py-3 text-center rounded-xl bg-card border border-border font-medium active:scale-[0.99] transition">
+          🔑 Buy License Key
+        </button>
+      </main>
+      ${bottomNav('products')}`;
+  }
+
+  // ============================================================
+  // LICENSE — key‑based purchase
+  // ============================================================
+  function renderLicense() {
+    if (!state.buyStep) state.buyStep = 'key';
+    if (state.buyStep !== 'key' && !state.buyProductCode) state.buyStep = 'key';
+
+    switch (state.buyStep) {
+      case 'key':       return renderLicenseKeyStep();
+      case 'confirm':   return renderLicenseConfirmStep();
+      case 'mode':      return renderLicenseModeStep();
+      case 'details':   return renderLicenseDetailsStep();
+      case 'txn':       return renderLicenseTxnStep();
+      case 'submitted': return renderLicenseSubmittedStep();
+      default:          state.buyStep = 'key'; return renderLicenseKeyStep();
+    }
+  }
+
+  function renderLicenseKeyStep() {
+    return `
+      ${header('🔑 License Key', { sub:'Enter your Product Key' })}
+      <main class="px-4 pt-6 pb-32 space-y-5 fade-in">
+        <div class="text-center">
+          <div class="text-4xl mb-2">🔑</div>
+          <p class="text-slate-300 text-sm">Enter the Product Key that came with your app to see your plan and price.</p>
+        </div>
+        ${field('Product Key', state.buyKey, "state.buyKey=this.value", 'text', 'e.g. PH-PID-001')}
+        <div class="bg-card border border-border rounded-xl p-3 text-xs text-muted">
+          💡 The Product Key determines your app, plan, and total.
+        </div>
+      </main>
+      <div class="fixed bottom-0 inset-x-0 max-w-md mx-auto p-4 bg-bg border-t border-border z-40">
+        <button onclick="continueFromKey()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Continue</button>
+      </div>
+      ${bottomNav('license')}`;
+  }
+
+  function renderLicenseConfirmStep() {
+    const p = productByCode(state.buyProductCode);
+    if (!p) { state.buyStep = 'key'; return renderLicenseKeyStep(); }
+    const plan = planOf(p, state.buyTerm);
+    if (!plan) { state.buyStep = 'key'; return renderLicenseKeyStep(); }
+    return `
+      ${header('Buy License', { back:"backToKey()", sub:'Confirm your license' })}
+      <main class="px-4 pt-6 pb-32 space-y-5 fade-in">
+        <div class="flex items-center gap-3 p-3 bg-card rounded-xl border border-border">
+          <div class="w-12 h-12 rounded-lg bg-bg flex items-center justify-center overflow-hidden">
+            ${productIcon(p, 'text-2xl')}
+          </div>
+          <div class="flex-1">
+            <div class="font-medium">${p.name}</div>
+            <div class="text-muted text-xs mono">${state.buyKey}</div>
+          </div>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 space-y-3 text-sm">
+          <div class="flex justify-between"><span class="text-muted">Plan</span><span class="font-medium">${plan.name}</span></div>
+          <div class="flex justify-between"><span class="text-muted">Duration</span><span>${p.name}/${plan.term}</span></div>
+          <div class="flex justify-between pt-2 border-t border-border">
+            <span class="text-muted">Amount due</span>
+            <span class="font-bold text-emerald-400 text-lg">${fmtETB(plan.price)}</span>
+          </div>
+        </div>
+        <p class="text-xs text-muted text-center">Next: choose your payment method.</p>
+      </main>
+      <div class="fixed bottom-0 inset-x-0 max-w-md mx-auto p-4 bg-bg border-t border-border z-40">
+        <button onclick="nextBuy('mode')" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Continue to Payment</button>
+      </div>
+      ${bottomNav('license')}`;
+  }
+
+  function renderLicenseModeStep() {
+    const p = productByCode(state.buyProductCode);
+    const plan = planOf(p, state.buyTerm);
+    if (!p || !plan) { state.buyStep = 'key'; return renderLicenseKeyStep(); }
+    const modes = [...new Set(PAYMENT_METHODS.filter(m=>m.productCode===p.code).map(m=>m.mode))];
+    return `
+      ${header('Buy License', { back:"nextBuy('confirm')", sub:'Payment method' })}
+      <main class="px-4 pt-6 pb-32 space-y-5 fade-in">
+        <p class="text-sm text-slate-300">Pay <span class="font-semibold text-emerald-400">${fmtETB(plan.price)}</span> for ${p.name}/${plan.term}:</p>
+        <div class="space-y-2">
+          ${modes.map(m=>`
+            <button onclick="pickPaymentMode('${m}')"
+              class="w-full flex items-center justify-between p-3 rounded-xl border ${state.buyPaymentMode===m?'border-emerald-500 bg-card':'border-border bg-bg'}">
+              <span class="font-medium text-sm">${m==='BANK'?'🏦 Bank Transfer':'📱 Telebirr'}</span>
+              <span class="text-emerald-400">${state.buyPaymentMode===m?'●':''}</span>
+            </button>`).join('')}
+        </div>
+      </main>
+      <div class="fixed bottom-0 inset-x-0 max-w-md mx-auto p-4 bg-bg border-t border-border z-40">
+        <button onclick="state.buyPaymentMode ? nextBuy('details') : toast('Pick a payment method')" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Continue</button>
+      </div>
+      ${bottomNav('license')}`;
+  }
+
+  function renderLicenseDetailsStep() {
+    const p = productByCode(state.buyProductCode);
+    const plan = planOf(p, state.buyTerm);
+    if (!p || !plan) { state.buyStep = 'key'; return renderLicenseKeyStep(); }
+    const options = PAYMENT_METHODS.filter(m=>m.productCode===p.code && m.mode===state.buyPaymentMode);
+    return `
+      ${header('Buy License', { back:"nextBuy('mode')", sub:'Complete payment' })}
+      <main class="px-4 pt-6 pb-32 space-y-4 fade-in">
+        <div class="bg-card border border-border rounded-xl p-4 space-y-2 text-sm">
+          <div class="flex justify-between"><span class="text-muted">Amount</span><span class="font-semibold text-emerald-400">${fmtETB(plan.price)}</span></div>
+          <div class="flex justify-between"><span class="text-muted">Plan</span><span>${p.name} / ${plan.term}</span></div>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 space-y-3 text-sm">
+          <div class="text-muted text-xs uppercase tracking-wider">${state.buyPaymentMode==='BANK'?'Bank accounts':'Telebirr wallet'}</div>
+          ${options.map((o,i)=>`
+            <div class="${i>0?'pt-2 border-t border-border':''}">
+              ${state.buyPaymentMode==='BANK' ? `
+                <div class="font-medium">${o.bank}</div>
+                <div class="text-muted text-xs">${o.accountName}</div>
+                <div class="mono text-sm mt-1">${o.accountNumber}</div>
+              ` : `
+                <div class="mono text-sm">${o.wallet}</div>
+              `}
+            </div>`).join('')}
+        </div>
+        <p class="text-xs text-muted text-center">Complete the payment, then tap "I Have Paid".</p>
+      </main>
+      <div class="fixed bottom-0 inset-x-0 max-w-md mx-auto p-4 bg-bg border-t border-border z-40">
+        <button onclick="nextBuy('txn')" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">💳 I Have Paid</button>
+      </div>
+      ${bottomNav('license')}`;
+  }
+
+  function renderLicenseTxnStep() {
+    return `
+      ${header('Buy License', { back:"nextBuy('details')", sub:'Confirm payment' })}
+      <main class="px-4 pt-6 pb-32 space-y-5 fade-in">
+        <p class="text-sm text-slate-300">Enter the transaction number from your payment receipt:</p>
+        ${field('Transaction Number', state.buyTxn, "state.buyTxn=this.value", 'text', 'e.g. TXN-99887')}
+      </main>
+      <div class="fixed bottom-0 inset-x-0 max-w-md mx-auto p-4 bg-bg border-t border-border z-40">
+        <button onclick="submitOrder()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Submit Order</button>
+      </div>
+      ${bottomNav('license')}`;
+  }
+
+  function renderLicenseSubmittedStep() {
+    const p = productByCode(state.buyProductCode);
+    const plan = planOf(p, state.buyTerm);
+    if (!p || !plan) { state.buyStep = 'key'; return renderLicenseKeyStep(); }
+    return `
+      ${header('Buy License', { sub:'Submitted' })}
+      <main class="px-4 pt-8 pb-32 space-y-4 fade-in text-center">
+        <div class="text-5xl">⏳</div>
+        <h2 class="text-lg font-semibold">Order submitted</h2>
+        <p class="text-sm text-muted px-4">Order <span class="mono text-slate-300">${state.buyOrderId}</span> is awaiting admin approval. You'll get your license key once confirmed.</p>
+        <div class="bg-card border border-border rounded-xl p-4 text-sm text-left space-y-2">
+          <div class="flex justify-between"><span class="text-muted">Status</span><span class="text-amber-400">PENDING</span></div>
+          <div class="flex justify-between"><span class="text-muted">Product</span><span>${p.name}</span></div>
+          <div class="flex justify-between"><span class="text-muted">Plan</span><span>${plan.name}</span></div>
+          <div class="flex justify-between"><span class="text-muted">Product Key</span><span class="mono text-xs">${state.buyKey}</span></div>
+        </div>
+      </main>
+      <div class="fixed bottom-0 inset-x-0 max-w-md mx-auto p-4 bg-bg border-t border-border z-40">
+        <button onclick="finishBuy()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Go to My Licenses</button>
+      </div>
+      ${bottomNav('license')}`;
+  }
+
+  // ---- license flow handlers ----
+  function continueFromKey() {
+    const resolved = resolveKey(state.buyKey);
+    if (!resolved) { toast('❌ Product Key not found'); return; }
+    state.buyProductCode = resolved.product.code;
+    state.buyTerm = resolved.plan.term;
+    state.buyStep = 'confirm';
+    render();
+  }
+  function backToKey() { state.buyStep = 'key'; render(); }
+  function nextBuy(step) { state.buyStep = step; render(); }
+  function pickPaymentMode(mode) { state.buyPaymentMode = mode; render(); }
+
+  function resetBuy() {
+    Object.assign(state, {
+      buyStep: null, buyKey: '', buyProductCode: null, buyTerm: null,
+      buyPaymentMode: null, buyTxn: '', buyOrderId: null,
+    });
+  }
+
+  function submitOrder() {
+    if (!state.buyTxn.trim()) return toast('Enter transaction number');
+    const p = productByCode(state.buyProductCode);
+    const plan = planOf(p, state.buyTerm);
+    if (!p || !plan) return toast('Invalid product or plan');
+    const orderId = genOrderId();
+    PENDING_ORDERS.unshift({
+      orderId, chatId: USER.chatId, phone: USER.phone,
+      productCode: p.code, planTerm: plan.term, productId: state.buyKey,
+      paymentMode: state.buyPaymentMode, txn: state.buyTxn,
+      status:'PENDING', date: new Date().toISOString().slice(0,10),
+    });
+    state.buyOrderId = orderId;
+    toast('Order submitted');
+    state.buyStep = 'submitted';
+    render();
+  }
+  function finishBuy() { resetBuy(); navigate('profile'); }
+
+  // ============================================================
+  // PROFILE
+  // ============================================================
+  function renderProfile() {
+    if (state.regStep) return renderRegisterFlow();
+    const showPwd = state._showPwd;
+    const myLicenses = SOLD_LICENSES.filter(l=>String(l.chatId)===String(USER.chatId));
+    const myOrders   = PENDING_ORDERS.filter(o=>String(o.chatId)===String(USER.chatId));
+    const totalKeys  = myLicenses.reduce((s,l)=>s+l.years.filter(Boolean).length,0);
+
+    return `
+      ${header('Profile')}
+      <main class="px-4 pt-4 space-y-4 fade-in">
+
+        <div class="bg-card border border-border rounded-xl p-4">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-14 h-14 rounded-full bg-bg flex items-center justify-center text-xl font-semibold">@</div>
+            <div class="flex-1">
+              <div class="font-semibold">${USER.registered?USER.name:'Guest'}</div>
+              <div class="text-muted text-xs mono">Chat ID: ${USER.chatId}</div>
+            </div>
+          </div>
+          ${USER.registered ? `
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="bg-bg border border-border rounded-lg p-2">
+                <div class="text-muted text-xs mb-0.5">Username</div>
+                <div class="mono">${USER.username}</div>
+              </div>
+              <div class="bg-bg border border-border rounded-lg p-2 flex items-center justify-between">
+                <div class="min-w-0">
+                  <div class="text-muted text-xs mb-0.5">Password</div>
+                  <div class="mono">${showPwd?USER.password:'••••'}</div>
+                </div>
+                <button onclick="togglePwd()" class="text-muted text-sm">${showPwd?'🙈':'👁'}</button>
+              </div>
+            </div>` : `
+            <button onclick="startRegister()" class="w-full mt-2 py-2 rounded-lg bg-emerald-500 text-white font-medium text-sm">📝 Register</button>`}
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div class="bg-card border border-border rounded-xl p-3 text-center">
+            <div class="text-2xl font-bold text-emerald-400">${totalKeys}</div>
+            <div class="text-xs text-muted">License keys</div>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-3 text-center">
+            <div class="text-2xl font-bold">${myOrders.length}</div>
+            <div class="text-xs text-muted">Orders</div>
+          </div>
+        </div>
+
+        <button onclick="navigate('license',{buyStep:'key', buyKey:'', buyProductCode:null, buyTerm:null, buyPaymentMode:null, buyTxn:'', buyOrderId:null})" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">🔑 Buy License</button>
+
+        <section>
+          <h2 class="text-xs uppercase tracking-wider text-muted mb-2">My Licenses</h2>
+          ${myLicenses.length ? myLicenses.map(l=>renderLicenseCard(l)).join('') : `<div class="text-muted text-sm bg-card border border-border rounded-xl p-4 text-center">No licenses yet</div>`}
+        </section>
+
+        <section>
+          <h2 class="text-xs uppercase tracking-wider text-muted mb-2">Purchase History</h2>
+          ${myOrders.length ? myOrders.map(o=>renderOrderCard(o)).join('') : `<div class="text-muted text-sm bg-card border border-border rounded-xl p-4 text-center">No purchases yet</div>`}
+        </section>
+      </main>
+      ${bottomNav('profile')}`;
+  }
+
+  function renderLicenseCard(lic) {
+    const p = productByCode(lic.productCode);
+    return `<div class="bg-card border border-border rounded-xl p-4 mb-3">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-lg bg-bg flex items-center justify-center overflow-hidden">
+          ${p ? productIcon(p, 'text-xl') : '<span class="text-xl">📦</span>'}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">${p?.name||lic.productCode}</div>
+          <div class="text-muted text-xs">${lic.years.filter(Boolean).length} of 5 slots used</div>
+        </div>
+      </div>
+      <div class="space-y-2">
+        ${lic.years.map((y,i)=>y?`
+          <div class="flex items-center justify-between bg-bg border border-border rounded-lg px-3 py-2">
+            <div class="min-w-0">
+              <div class="text-[10px] text-muted uppercase tracking-wider">Year ${i+1}</div>
+              <div class="mono text-sm truncate">${y.key}</div>
+            </div>
+            <button onclick="copyKey('${y.key}')" class="text-muted text-sm">📋</button>
+          </div>`:'').join('')}
+      </div>
+    </div>`;
+  }
+
+  function renderOrderCard(o) {
+    const p = productByCode(o.productCode);
+    const statusColor = o.status==='APPROVED'?'text-emerald-400':o.status==='REJECTED'?'text-red-400':'text-amber-400';
+    const statusIcon  = o.status==='APPROVED'?'✅':o.status==='REJECTED'?'❌':'⏳';
+    return `<div class="bg-card border border-border rounded-xl p-4 mb-3">
+      <div class="flex items-center justify-between mb-1">
+        <div class="font-medium">${p?.name||o.productCode} <span class="text-muted text-xs">/${o.planTerm}</span></div>
+        <div class="text-xs ${statusColor}">${statusIcon} ${o.status}</div>
+      </div>
+      <div class="text-muted text-xs">Txn: ${o.txn} · ${o.paymentMode}</div>
+      <div class="text-muted text-xs mt-1">${fmtDate(o.date)}</div>
+      ${o.status==='PENDING' ? `<button onclick="mockApprove('${o.orderId}')" class="mt-3 text-xs px-3 py-1.5 rounded bg-bg border border-border">(Demo) Approve order</button>`:''}
+    </div>`;
+  }
+
+  function togglePwd() { state._showPwd = !state._showPwd; render(); }
+  function copyKey(k) { navigator.clipboard.writeText(k).then(()=>toast('Copied')); }
+
+  function mockApprove(orderId) {
+    const o = PENDING_ORDERS.find(x=>x.orderId===orderId);
+    if (!o) return;
+    o.status = 'APPROVED';
+    let row = SOLD_LICENSES.find(l=>String(l.chatId)===String(o.chatId) && l.productCode===o.productCode);
+    const newKey = genKey(o.productCode.slice(0,2));
+    if (!row) {
+      row = { customerId:'CUST-'+Math.random().toString(36).slice(2,10).toUpperCase(),
+              chatId:o.chatId, phone:o.phone, productCode:o.productCode,
+              years:[null,null,null,null,null] };
+      SOLD_LICENSES.push(row);
+    }
+    const idx = row.years.findIndex(x=>!x);
+    if (idx===-1) { toast('All slots used'); render(); return; }
+    row.years[idx] = { key:newKey, assignedAt:new Date().toISOString().slice(0,10) };
+    toast('✅ License assigned');
+    render();
+  }
+
+  // ============================================================
+  // REGISTER
+  // ============================================================
+  function startRegister() {
+    Object.assign(state, { regStep:'product', regProductCode:null, regProductId:'', regName:'', regPhone:'' });
+    render();
+  }
+  function renderRegisterFlow() {
+    const step = state.regStep;
+    const stepTitle = { product:'Product', productId:'Product ID', name:'Full Name', phone:'Phone' }[step];
+    return `
+      ${header('Register — '+stepTitle, { back:'cancelRegister()' })}
+      <main class="px-4 pt-4 pb-32 space-y-5 fade-in">
+        ${step==='product' ? `
+          <p class="text-sm text-slate-300">Choose the product you registered:</p>
+          <div class="space-y-2">
+            ${PRODUCTS.map(p=>`
+              <button onclick="regPickProduct('${p.code}')" class="w-full flex items-center gap-3 p-3 bg-card rounded-xl border border-border text-left">
+                <div class="w-10 h-10 rounded-lg bg-bg flex items-center justify-center overflow-hidden">
+                  ${productIcon(p, 'text-xl')}
+                </div>
+                <div class="flex-1"><div class="font-medium text-sm">${p.name}</div></div>
+              </button>`).join('')}
+          </div>`:''}
+        ${step==='productId' ? `
+          <p class="text-sm text-slate-300">Enter your Product ID for ${productByCode(state.regProductCode)?.name}:</p>
+          ${field('Product ID', state.regProductId, "state.regProductId=this.value", 'text', 'e.g. PH-PID-001')}`:''}
+        ${step==='name' ? `
+          <p class="text-sm text-slate-300">Enter your full name:</p>
+          ${field('Full Name', state.regName, "state.regName=this.value", 'text', 'Abebe Bekele')}`:''}
+        ${step==='phone' ? `
+          <p class="text-sm text-slate-300">Enter your phone number:</p>
+          ${field('Phone', state.regPhone, "state.regPhone=this.value", 'tel', '0911223344')}`:''}
+      </main>
+      <div class="fixed bottom-0 inset-x-0 max-w-md mx-auto p-4 bg-bg border-t border-border z-40">
+        <button onclick="regNext()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">Continue</button>
+      </div>`;
+  }
+  function regPickProduct(code) { state.regProductCode = code; state.regStep = 'productId'; render(); }
+  function regNext() {
+    const s = state.regStep;
+    if (s==='product') { if (!state.regProductCode) return toast('Choose a product'); state.regStep='productId'; }
+    else if (s==='productId') { if (!state.regProductId.trim()) return toast('Enter Product ID'); state.regStep='name'; }
+    else if (s==='name') { if (!state.regName.trim()) return toast('Enter name'); state.regStep='phone'; }
+    else if (s==='phone') {
+      if (!isValidPhone(state.regPhone)) return toast('Invalid phone');
+      USER.registered = true; USER.name = state.regName.trim(); USER.phone = state.regPhone.trim();
+      state.regStep = null; toast('✅ Registered · admin / 0000'); render(); return;
+    }
+    render();
+  }
+  function cancelRegister() { state.regStep = null; render(); }
+  function isValidPhone(phone) {
+    let p = (phone||'').replace(/[\s-]/g,'');
+    if (p.startsWith('+')) p = p.slice(1);
+    return /^\d+$/.test(p) && p.length>=9 && p.length<=15;
+  }
+
+  // ============================================================
+  // RENDER ROUTER
+  // ============================================================
+  function render() {
+    const routes = {
+      home: renderHome,
+      products: renderProducts,
+      license: renderLicense,
+      profile: renderProfile
+    };
+    app.innerHTML = (routes[state.route] || renderHome)();
+  }
+
+  if (window.Telegram?.WebApp) {
+    Telegram.WebApp.ready(); Telegram.WebApp.expand(); Telegram.WebApp.setHeaderColor('#0F172A');
+  }
+  render();
   </script>
 </body>
 </html>
