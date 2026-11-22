@@ -163,39 +163,112 @@ checkIfRegistered();
     }
 
     // ================= HOME =================
-    function renderHome() {
-      return `
-        ${header('PIS License Store')}
-        <main class="px-4 pt-6 space-y-5 fade-in">
-          <div class="bg-card border border-border rounded-2xl p-5 text-center">
-            <div class="text-4xl mb-2">🔐</div>
-            <h2 class="text-lg font-bold text-emerald-400">License Activation</h2>
-            <p class="text-sm text-slate-300 mt-2">Register first, then buy your license key.</p>
-          </div>
+   function renderHome() {
+  return `
+    ${header('PIS License Store')}
+    <main class="px-4 pt-5 space-y-5 fade-in pb-8">
 
-          ${!state.user.registered ? `
-            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-sm text-amber-300">
-              ⚠️ You need to register before buying a license.
-              <button onclick="navigate('profile')" class="block w-full mt-3 py-2 rounded-lg bg-amber-500 text-black font-medium">
-                Register Now
-              </button>
-            </div>
-          ` : `
-            <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-sm text-emerald-300">
-              ✅ Registered as ${state.user.name}
-            </div>
-          `}
+      <!-- Hero -->
+      <div class="bg-gradient-to-br from-emerald-500/20 to-card border border-border rounded-2xl p-5 text-center">
+        <div class="text-4xl mb-2">🔐</div>
+        <h2 class="text-xl font-bold text-emerald-400">PIS License Store</h2>
+        <p class="text-sm text-slate-300 mt-2">Official license activation for Pharmacy & Clinic POS systems.</p>
+      </div>
 
-          <div class="bg-card border border-border rounded-xl p-4 text-sm text-muted space-y-1">
-            <p class="font-medium text-slate-300 mb-2">How it works:</p>
-            <p>1. Register your account</p>
-            <p>2. Download the APK</p>
-            <p>3. Buy license with Product Key</p>
-            <p>4. Receive License Key after approval</p>
+      <!-- Registration Status -->
+      ${!state.user.registered ? `
+        <div class="bg-amber-500/10 border border-amber-500/40 rounded-xl p-4">
+          <div class="font-medium text-amber-300 mb-1">Registration Required</div>
+          <p class="text-sm text-slate-300 mb-3">Please register first to buy a license.</p>
+          <button onclick="navigate('profile')" class="w-full py-2.5 rounded-lg bg-amber-500 text-black font-semibold text-sm">
+            Register Now
+          </button>
+        </div>
+      ` : `
+        <div class="bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-4 flex items-center gap-3">
+          <div class="text-2xl">✅</div>
+          <div>
+            <div class="font-medium text-emerald-300">Welcome, ${state.user.name}</div>
+            <div class="text-xs text-muted">You are registered</div>
           </div>
-        </main>
-        ${bottomNav('home')}`;
-    }
+        </div>
+      `}
+
+      <!-- How it works -->
+      <div class="bg-card border border-border rounded-xl p-4">
+        <h3 class="text-sm font-semibold mb-3 text-slate-200">How it works</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">1</div>
+            <div>
+              <div class="font-medium">Register</div>
+              <div class="text-muted text-xs">Create your account using phone number</div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">2</div>
+            <div>
+              <div class="font-medium">Download APK</div>
+              <div class="text-muted text-xs">Get the app from Products page</div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">3</div>
+            <div>
+              <div class="font-medium">Buy License</div>
+              <div class="text-muted text-xs">Enter Product Key and make payment</div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">4</div>
+            <div>
+              <div class="font-medium">Activate</div>
+              <div class="text-muted text-xs">Receive License Key after approval</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="bg-card border border-border rounded-xl p-4">
+        <h3 class="text-sm font-semibold mb-3 text-slate-200">Features</h3>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div class="bg-bg rounded-lg p-3 border border-border">
+            <div class="text-lg mb-1">⚡</div>
+            <div class="font-medium">Fast Activation</div>
+            <div class="text-xs text-muted">Quick license delivery</div>
+          </div>
+          <div class="bg-bg rounded-lg p-3 border border-border">
+            <div class="text-lg mb-1">🔒</div>
+            <div class="font-medium">Secure</div>
+            <div class="text-xs text-muted">Unique product keys</div>
+          </div>
+          <div class="bg-bg rounded-lg p-3 border border-border">
+            <div class="text-lg mb-1">📱</div>
+            <div class="font-medium">Offline App</div>
+            <div class="text-xs text-muted">Works without internet</div>
+          </div>
+          <div class="bg-bg rounded-lg p-3 border border-border">
+            <div class="text-lg mb-1">💳</div>
+            <div class="font-medium">Local Payment</div>
+            <div class="text-xs text-muted">Bank & Telebirr</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="navigate('products')" class="py-3 rounded-xl bg-card border border-border font-medium text-sm">
+          🛍 Products
+        </button>
+        <button onclick="navigate('license')" class="py-3 rounded-xl bg-emerald-500 text-white font-medium text-sm">
+          🔑 Buy License
+        </button>
+      </div>
+
+    </main>
+    ${bottomNav('home')}`;
+}
 
     // ================= PRODUCTS =================
     async function loadProducts() {
