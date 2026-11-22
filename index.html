@@ -63,13 +63,36 @@
     };
 
     // ================= TELEGRAM =================
-    if (window.Telegram?.WebApp) {
-      const tg = Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-      tg.setHeaderColor('#0F172A');
-      state.user.chatId = tg.initDataUnsafe?.user?.id?.toString() || null;
+   // ================= TELEGRAM + CHECK USER =================
+if (window.Telegram?.WebApp) {
+  const tg = Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('#0F172A');
+  state.user.chatId = tg.initDataUnsafe?.user?.id?.toString() || null;
+}
+
+// Check if user is already registered
+async function checkIfRegistered() {
+  if (!state.user.chatId) return;
+
+  try {
+    const res = await apiGet('checkUser', { chatId: state.user.chatId });
+    
+    if (res.success && res.registered) {
+      state.user.registered = true;
+      state.user.name = res.data.name;
+      state.user.phone = res.data.phone;
     }
+  } catch (err) {
+    console.log('Check user failed', err);
+  }
+  
+  render();
+}
+
+// Call it when app starts
+checkIfRegistered();
 
     // ================= API =================
     async function apiGet(action, params = {}) {
