@@ -132,18 +132,25 @@ checkIfRegistered();
     }
 
     // ================= NAVIGATION =================
-    function navigate(route) {
-  if (!state.user.registered && route !== 'profile' && route !== 'home' && route !== 'admin') {
-    toast('Please register first');
-    state.route = 'profile';
-    render();
-    return;
+   function navigate(route) {
+  // Admin can only access admin pages
+  if (state.isAdmin) {
+    if (!route.startsWith('admin')) {
+      route = 'admin-dashboard';
+    }
+  } else {
+    // Normal user protection
+    if (!state.user.registered && route !== 'profile' && route !== 'home') {
+      toast('Please register first');
+      route = 'profile';
+    }
   }
+
   state.route = route;
   window.scrollTo(0, 0);
   render();
 
-  if (route === 'admin') {
+  if (route === 'admin-approvals') {
     loadPendingOrders();
   }
 }
@@ -151,18 +158,32 @@ checkIfRegistered();
 
 
     // ================= UI HELPERS =================
-    function bottomNav(active) {
+   function bottomNav(active) {
+  // ADMIN NAVIGATION
+  if (state.isAdmin) {
+    const adminItems = [
+      { key: 'admin-dashboard', icon: '📊', label: 'Dashboard' },
+      { key: 'admin-approvals', icon: '✅', label: 'Approvals' },
+    ];
+
+    return `
+      <nav class="fixed bottom-0 inset-x-0 max-w-md mx-auto bg-card border-t border-border flex z-40">
+        ${adminItems.map(i => `
+          <button onclick="navigate('${i.key}')" class="flex-1 py-3 text-center text-xs ${active === i.key ? 'text-emerald-400' : 'text-muted'}">
+            <div class="text-lg mb-0.5">${i.icon}</div>
+            <div>${i.label}</div>
+          </button>
+        `).join('')}
+      </nav>`;
+  }
+
+  // NORMAL USER NAVIGATION
   const items = [
     { key: 'home',     icon: '🏠', label: 'Home' },
     { key: 'products', icon: '🛍', label: 'Products' },
     { key: 'license',  icon: '🔑', label: 'License' },
     { key: 'profile',  icon: '👤', label: 'Profile' }
   ];
-
-  // Add Admin tab only for admins
-  if (state.isAdmin) {
-    items.push({ key: 'admin', icon: '🛡️', label: 'Admin' });
-  }
 
   return `
     <nav class="fixed bottom-0 inset-x-0 max-w-md mx-auto bg-card border-t border-border flex z-40">
@@ -185,36 +206,65 @@ checkIfRegistered();
         </header>`;
     }
 // ================= ADMIN =================
-function renderAdmin() {
-  if (!state.isAdmin) {
-    return `
-      ${header('Admin')}
-      <main class="px-4 pt-10 text-center text-muted">Access denied</main>
-      ${bottomNav('admin')}`;
-  }
-
+function renderAdminApprovals() {
   return `
-    ${header('Admin Panel')}
+    ${header('Pending Approvals')}
     <main class="px-4 pt-4 pb-28 space-y-4 fade-in">
 
-      <div class="bg-card border border-border rounded-xl p-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="font-semibold">Pending Orders</div>
-            <div class="text-xs text-muted">Manual approval</div>
-          </div>
-          <button onclick="loadPendingOrders()" class="text-sm text-emerald-400">Refresh</button>
-        </div>
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-muted">Orders waiting for approval</div>
+        <button onclick="loadPendingOrders()" class="text-sm text-emerald-400">Refresh</button>
       </div>
 
       <div id="pendingList">
-        ${state.adminLoading ? `<p class="text-center text-muted py-8">Loading...</p>` : ''}
+        ${state.adminLoading ? `<p class="text-center text-muted py-10">Loading...</p>` : ''}
       </div>
 
     </main>
-    ${bottomNav('admin')}`;
+    ${bottomNav('admin-approvals')}`;
 }
 
+    
+function renderAdminDashboard() {
+  return `
+    ${header('Admin Dashboard')}
+    <main class="px-4 pt-5 space-y-4 fade-in pb-28">
+
+      <div class="bg-card border border-border rounded-xl p-4">
+        <div class="text-sm text-muted">Logged in as Admin</div>
+        <div class="font-semibold mt-1">${state.user.name || 'Admin'}</div>
+        <div class="text-xs text-muted mono">${state.user.chatId}</div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-card border border-border rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-amber-400" id="pendingCount">-</div>
+          <div class="text-xs text-muted mt-1">Pending Orders</div>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-emerald-400">✓</div>
+          <div class="text-xs text-muted mt-1">Manual Approval</div>
+        </div>
+      </div>
+
+      <button onclick="navigate('admin-approvals')" 
+        class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">
+        Go to Approvals
+      </button>
+
+      <div class="bg-card border border-border rounded-xl p-4 text-sm text-muted">
+        <p class="mb-2 font-medium text-slate-300">Admin Functions</p>
+        <ul class="space-y-1 list-disc list-inside">
+          <li>Review pending payments</li>
+          <li>Approve orders & send license keys</li>
+          <li>Monitor license assignments</li>
+        </ul>
+      </div>
+
+    </main>
+    ${bottomNav('admin-dashboard')}`;
+}
+    
 async function loadPendingOrders() {
   state.adminLoading = true;
   render();
@@ -233,6 +283,9 @@ async function loadPendingOrders() {
   renderPendingList();
 }
 
+
+ // ================= Apending list=================   
+    
 function renderPendingList() {
   const container = document.getElementById('pendingList');
   if (!container) return;
@@ -297,6 +350,7 @@ async function approveOrder(orderId) {
     toast(res.message || 'Approval failed');
   }
 }
+
     
     // ================= HOME =================
    function renderHome() {
@@ -787,24 +841,34 @@ function resetBuy() {
     }
 
     // ================= RENDER =================
-    function render() {
+   function render() {
+  // If admin opens the app, default to admin dashboard
+  if (state.isAdmin && (state.route === 'home' || !state.route.startsWith('admin'))) {
+    state.route = 'admin-dashboard';
+  }
+
   const map = {
     home: renderHome,
     products: renderProducts,
     license: renderLicense,
     profile: renderProfile,
-    admin: renderAdmin
+    'admin-dashboard': renderAdminDashboard,
+    'admin-approvals': renderAdminApprovals,
+    admin: renderAdminApprovals          // fallback
   };
+
   document.getElementById('app').innerHTML = (map[state.route] || renderHome)();
 
   if (state.route === 'profile') loadProfileData();
-  if (state.route === 'admin') renderPendingList();
+  if (state.route === 'admin-approvals' || state.route === 'admin') {
+    renderPendingList();
+  }
 }
-
     render();
   </script>
 </body>
 </html>
+
 
 
 
