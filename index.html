@@ -40,6 +40,9 @@
 
     // ================= STATE =================
     const state = {
+        isAdmin: false,
+  pendingOrders: [],
+  adminLoading: false
       route: 'home',
       user: {
         chatId: null,
@@ -74,20 +77,29 @@ if (window.Telegram?.WebApp) {
 
 // Check if user is already registered
 async function checkIfRegistered() {
-  if (!state.user.chatId) return;
+  if (!state.user.chatId) {
+    render();
+    return;
+  }
 
   try {
+    // Check registration
     const res = await apiGet('checkUser', { chatId: state.user.chatId });
-    
     if (res.success && res.registered) {
       state.user.registered = true;
       state.user.name = res.data.name;
       state.user.phone = res.data.phone;
     }
+
+    // Check if admin
+    const adminRes = await apiGet('checkAdmin', { chatId: state.user.chatId });
+    if (adminRes.success && adminRes.isAdmin) {
+      state.isAdmin = true;
+    }
   } catch (err) {
-    console.log('Check user failed', err);
+    console.log('Startup check failed', err);
   }
-  
+
   render();
 }
 
@@ -121,36 +133,59 @@ checkIfRegistered();
 
     // ================= NAVIGATION =================
     function navigate(route) {
-      // Force registration
-      if (!state.user.registered && route !== 'profile' && route !== 'home') {
-        toast('Please register first');
-        state.route = 'profile';
-        render();
-        return;
-      }
-      state.route = route;
-      window.scrollTo(0, 0);
-      render();
-    }
+  if (!state.user.registered && route !== 'profile' && route !== 'home' && route !== 'admin') {
+    toast('Please register first');
+    state.route = 'profile';
+    render();
+    return;
+  }
+  state.route = route;
+  window.scrollTo(0, 0);
+  render();
+
+  if (route === 'admin') {
+    loadPendingOrders();
+  }
+}
+
+function render() {
+  const map = {
+    home: renderHome,
+    products: renderProducts,
+    license: renderLicense,
+    profile: renderProfile,
+    admin: renderAdmin
+  };
+  document.getElementById('app').innerHTML = (map[state.route] || renderHome)();
+
+  if (state.route === 'profile') loadProfileData();
+  if (state.route === 'admin') renderPendingList();
+}
 
     // ================= UI HELPERS =================
     function bottomNav(active) {
-      const items = [
-        { key: 'home', icon: '🏠', label: 'Home' },
-        { key: 'products', icon: '🛍', label: 'Products' },
-        { key: 'license', icon: '🔑', label: 'License' },
-        { key: 'profile', icon: '👤', label: 'Profile' }
-      ];
-      return `
-        <nav class="fixed bottom-0 inset-x-0 max-w-md mx-auto bg-card border-t border-border flex z-40">
-          ${items.map(i => `
-            <button onclick="navigate('${i.key}')" class="flex-1 py-3 text-center text-xs ${active === i.key ? 'text-emerald-400' : 'text-muted'}">
-              <div class="text-lg mb-0.5">${i.icon}</div>
-              <div>${i.label}</div>
-            </button>
-          `).join('')}
-        </nav>`;
-    }
+  const items = [
+    { key: 'home',     icon: '🏠', label: 'Home' },
+    { key: 'products', icon: '🛍', label: 'Products' },
+    { key: 'license',  icon: '🔑', label: 'License' },
+    { key: 'profile',  icon: '👤', label: 'Profile' }
+  ];
+
+  // Add Admin tab only for admins
+  if (state.isAdmin) {
+    items.push({ key: 'admin', icon: '🛡️', label: 'Admin' });
+  }
+
+  return `
+    <nav class="fixed bottom-0 inset-x-0 max-w-md mx-auto bg-card border-t border-border flex z-40">
+      ${items.map(i => `
+        <button onclick="navigate('${i.key}')" class="flex-1 py-3 text-center text-xs ${active === i.key ? 'text-emerald-400' : 'text-muted'}">
+          <div class="text-lg mb-0.5">${i.icon}</div>
+          <div>${i.label}</div>
+        </button>
+      `).join('')}
+    </nav>`;
+}
 
     function header(title, back = null) {
       return `
@@ -161,7 +196,120 @@ checkIfRegistered();
           </div>
         </header>`;
     }
+// ================= ADMIN =================
+function renderAdmin() {
+  if (!state.isAdmin) {
+    return `
+      ${header('Admin')}
+      <main class="px-4 pt-10 text-center text-muted">Access denied</main>
+      ${bottomNav('admin')}`;
+  }
 
+  return `
+    ${header('Admin Panel')}
+    <main class="px-4 pt-4 pb-28 space-y-4 fade-in">
+
+      <div class="bg-card border border-border rounded-xl p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-semibold">Pending Orders</div>
+            <div class="text-xs text-muted">Manual approval</div>
+          </div>
+          <button onclick="loadPendingOrders()" class="text-sm text-emerald-400">Refresh</button>
+        </div>
+      </div>
+
+      <div id="pendingList">
+        ${state.adminLoading ? `<p class="text-center text-muted py-8">Loading...</p>` : ''}
+      </div>
+
+    </main>
+    ${bottomNav('admin')}`;
+}
+
+async function loadPendingOrders() {
+  state.adminLoading = true;
+  render();
+
+  const res = await apiGet('getPendingOrders');
+  state.adminLoading = false;
+
+  if (res.success) {
+    state.pendingOrders = res.data || [];
+  } else {
+    toast(res.message || 'Failed to load orders');
+    state.pendingOrders = [];
+  }
+
+  render();
+  renderPendingList();
+}
+
+function renderPendingList() {
+  const container = document.getElementById('pendingList');
+  if (!container) return;
+
+  if (!state.pendingOrders.length) {
+    container.innerHTML = `
+      <div class="bg-card border border-border rounded-xl p-6 text-center text-muted text-sm">
+        No pending orders
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = state.pendingOrders.map(o => `
+    <div class="bg-card border border-border rounded-xl p-4 mb-3">
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <div class="font-medium">${o.productCode}</div>
+          <div class="text-xs text-muted mono">${o.orderId}</div>
+        </div>
+        <span class="text-xs text-amber-400">PENDING</span>
+      </div>
+
+      <div class="text-sm space-y-1 mb-3">
+        <div class="flex justify-between">
+          <span class="text-muted">Product Key</span>
+          <span class="mono text-xs">${o.productKey}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-muted">Txn Number</span>
+          <span class="mono text-xs">${o.txnNumber}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-muted">Phone</span>
+          <span>${o.phone || '-'}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-muted">Chat ID</span>
+          <span class="text-xs">${o.chatId}</span>
+        </div>
+      </div>
+
+      <button onclick="approveOrder('${o.orderId}')" 
+        class="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold">
+        ✅ Approve & Send License
+      </button>
+    </div>
+  `).join('');
+}
+
+async function approveOrder(orderId) {
+  if (!confirm('Approve this order and send license key?')) return;
+
+  toast('Approving...');
+  const res = await apiPost('approveOrder', { orderId });
+
+  if (res.success) {
+    toast('Order approved successfully');
+    // Remove from list
+    state.pendingOrders = state.pendingOrders.filter(o => o.orderId !== orderId);
+    renderPendingList();
+  } else {
+    toast(res.message || 'Approval failed');
+  }
+}
+    
     // ================= HOME =================
    function renderHome() {
   return `
@@ -666,3 +814,4 @@ function resetBuy() {
   </script>
 </body>
 </html>
+
