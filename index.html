@@ -148,19 +148,7 @@ checkIfRegistered();
   }
 }
 
-function render() {
-  const map = {
-    home: renderHome,
-    products: renderProducts,
-    license: renderLicense,
-    profile: renderProfile,
-    admin: renderAdmin
-  };
-  document.getElementById('app').innerHTML = (map[state.route] || renderHome)();
 
-  if (state.route === 'profile') loadProfileData();
-  if (state.route === 'admin') renderPendingList();
-}
 
     // ================= UI HELPERS =================
     function bottomNav(active) {
@@ -800,20 +788,24 @@ function resetBuy() {
 
     // ================= RENDER =================
     function render() {
-      const map = {
-        home: renderHome,
-        products: renderProducts,
-        license: renderLicense,
-        profile: renderProfile
-      };
-      document.getElementById('app').innerHTML = (map[state.route] || renderHome)();
-      if (state.route === 'profile') loadProfileData();
-    }
+  const map = {
+    home: renderHome,
+    products: renderProducts,
+    license: renderLicense,
+    profile: renderProfile,
+    admin: renderAdmin
+  };
+  document.getElementById('app').innerHTML = (map[state.route] || renderHome)();
+
+  if (state.route === 'profile') loadProfileData();
+  if (state.route === 'admin') renderPendingList();
+}
 
     render();
   </script>
 </body>
 </html>
+
 
 
 
