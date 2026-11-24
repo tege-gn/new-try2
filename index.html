@@ -812,36 +812,43 @@ function resetBuy() {
   const licensesEl = document.getElementById('licensesList');
 
   // ---------- ORDERS ----------
-  if (ordersEl) {
-    if (orders.success && orders.data.length) {
-      ordersEl.innerHTML = orders.data.map(o => `
-        <div class="bg-card border border-border rounded-xl p-3 mb-2">
-          <div class="flex justify-between text-sm">
-            <span>${o.productCode}</span>
-            <span class="${o.status==='APPROVED'?'text-emerald-400':o.status==='REJECTED'?'text-red-400':'text-amber-400'}">${o.status}</span>
-          </div>
-          <div class="text-xs text-muted mt-1">Txn: ${o.txnNumber}</div>
-        </div>
-      `).join('');
-    } else {
-      ordersEl.innerHTML = `<div class="bg-card border border-border rounded-xl p-4 text-center text-muted">No orders yet</div>`;
-    }
-  }
-
-  // ---------- LICENSES ----------
+    // ---------- LICENSES ----------
   if (licensesEl) {
     if (licenses.success && licenses.data.length) {
       licensesEl.innerHTML = licenses.data.map(l => {
-        const renewal = Number(l.currentRenewal) || 1;
-        const keys    = [l.key1, l.key2, l.key3, l.key4, l.key5];
+        
+        // 1. SAFELY PARSE RENEWAL (Fixes the weird ID issue)
+        let renewal = parseInt(l.currentRenewal, 10);
+        if (isNaN(renewal) || renewal < 1) renewal = 1; 
+        if (renewal > 5) renewal = 5;
+
+        // 2. GET KEYS (Handles different backend naming)
+        // We check both lowercase and uppercase, and snake_case
+        const keys = [
+          l.key1 || l.key_1 || l.Key_1,
+          l.key2 || l.key_2 || l.Key_2,
+          l.key3 || l.key_3 || l.Key_3,
+          l.key4 || l.key_4 || l.Key_4,
+          l.key5 || l.key_5 || l.Key_5
+        ];
+        
         const ordinals = ['1st', '2nd', '3rd', '4th', '5th'];
 
-        const keyLines = keys.slice(0, renewal).map((k, idx) => `
-          <div class="flex justify-between items-center py-1 border-b border-border last:border-0">
-            <span class="text-xs text-muted">${ordinals[idx]} license key</span>
-            <span class="mono text-emerald-400 text-xs">${k || '—'}</span>
-          </div>
-        `).join('');
+        // 3. FILTER: Only show keys up to the current renewal AND only if they exist
+        const keyLines = keys
+          .slice(0, renewal)
+          .map((k, idx) => {
+            // If the key is empty or undefined, don't show the row at all
+            if (!k || k === '') return ''; 
+
+            return `
+              <div class="flex justify-between items-center py-1 border-b border-border last:border-0">
+                <span class="text-xs text-muted">${ordinals[idx]} license key</span>
+                <span class="mono text-emerald-400 text-xs">${k}</span>
+              </div>
+            `;
+          })
+          .join('');
 
         const canRenew = renewal < 5;
 
@@ -858,7 +865,7 @@ function resetBuy() {
             </div>
 
             <div class="bg-bg border border-border rounded-lg px-3 py-1">
-              ${keyLines}
+              ${keyLines || '<div class="text-xs text-muted py-2 text-center">No keys assigned</div>'}
             </div>
 
             ${canRenew ? `
