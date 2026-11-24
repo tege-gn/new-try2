@@ -810,37 +810,74 @@ function resetBuy() {
       const ordersEl = document.getElementById('ordersList');
       const licensesEl = document.getElementById('licensesList');
 
-      if (ordersEl) {
-        if (orders.success && orders.data.length) {
-          ordersEl.innerHTML = orders.data.map(o => `
-            <div class="bg-card border border-border rounded-xl p-3 mb-2">
-              <div class="flex justify-between text-sm">
-                <span>${o.productCode}</span>
-                <span class="${o.status==='APPROVED'?'text-emerald-400':o.status==='REJECTED'?'text-red-400':'text-amber-400'}">${o.status}</span>
-              </div>
-              <div class="text-xs text-muted mt-1">Txn: ${o.txnNumber}</div>
-            </div>
-          `).join('');
-        } else {
-          ordersEl.innerHTML = `<div class="bg-card border border-border rounded-xl p-4 text-center">No orders yet</div>`;
-        }
-      }
-
       if (licensesEl) {
-        if (licenses.success && licenses.data.length) {
-          licensesEl.innerHTML = licenses.data.map(l => `
-            <div class="bg-card border border-border rounded-xl p-3 mb-2">
-              <div class="font-medium text-sm">${l.productCode}</div>
-              <div class="text-xs text-muted">Key: ${l.productKey}</div>
-              <div class="mono text-emerald-400 mt-1">${l.licenseKey}</div>
-            </div>
-          `).join('');
-        } else {
-          licensesEl.innerHTML = `<div class="bg-card border border-border rounded-xl p-4 text-center">No licenses yet</div>`;
-        }
-      }
-    }
+  if (licenses.success && licenses.data.length) {
+    licensesEl.innerHTML = licenses.data.map(l => {
+      const renewal = Number(l.currentRenewal) || 1;   // 1..5
+      const keys = [
+        l.key1, l.key2, l.key3, l.key4, l.key5         // key_1..key_5 from backend
+      ];
+      const ordinals = ['1st', '2nd', '3rd', '4th', '5th'];
 
+      const keyLines = keys
+        .slice(0, renewal)                             // only issued keys
+        .map((k, idx) => `
+          <div class="flex justify-between items-center py-1 border-b border-border last:border-0">
+            <span class="text-xs text-muted">${ordinals[idx]} license key</span>
+            <span class="mono text-emerald-400 text-xs">${k || '—'}</span>
+          </div>
+        `)
+        .join('');
+
+      const canRenew = renewal < 5;
+
+      return `
+        <div class="bg-card border border-border rounded-xl p-3 mb-2 space-y-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="font-medium text-sm">${l.productCode}</div>
+              <div class="text-xs text-muted mono">Product Key: ${l.productKey}</div>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">
+              ${renewal}/5
+            </span>
+          </div>
+
+          <div class="bg-bg border border-border rounded-lg px-3 py-1">
+            ${keyLines}
+          </div>
+
+          ${canRenew ? `
+            <button onclick="startRenewal('${l.productKey}')"
+              class="w-full py-2 rounded-lg bg-emerald-500/15 text-emerald-400 text-xs font-semibold">
+              🔄 Renew (get ${ordinals[renewal]} license key)
+            </button>
+          ` : `
+            <div class="text-center text-xs text-amber-400 py-2">
+              All 5 keys issued — contact support to extend
+            </div>
+          `}
+        </div>
+      `;
+    }).join('');
+  } else {
+    licensesEl.innerHTML = `<div class="bg-card border border-border rounded-xl p-4 text-center text-muted">No licenses yet</div>`;
+  }
+}
+//==============start renewal===========
+
+function startRenewal(productKey) {
+  state.buyStep     = 'key';
+  state.productKey  = productKey;
+  state.resolvedKey = null;
+  state.paymentMode = null;
+  state.paymentOptions = [];
+  state.txnNumber   = '';
+  state.currentOrderId = null;
+  navigate('license');
+}
+
+      
     // ================= RENDER =================
    function render() {
   if (!state.appReady) {
