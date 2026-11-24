@@ -343,6 +343,27 @@ function renderPendingList() {
   `).join('');
 }
 
+    async function approveOrder(orderId) {
+  if (!confirm('Approve this order and send license key?')) return;
+
+  toast('Approving...');
+  
+  try {
+    const res = await apiPost('approveOrder', { orderId });
+
+    if (res.success) {
+      toast('✅ Order Approved!');
+      // Remove from list immediately so it disappears from the UI
+      state.pendingOrders = state.pendingOrders.filter(o => o.orderId !== orderId);
+      renderPendingList();
+    } else {
+      toast(res.message || 'Approval failed');
+    }
+  } catch (err) {
+    toast('Network error. Check connection.');
+  }
+}
+    
 async function rejectOrder(orderId) {
   if (!confirm('Are you sure you want to cancel this order?')) return;
 
