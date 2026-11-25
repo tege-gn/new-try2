@@ -656,14 +656,11 @@ async function resolveKey() {
   }
 
   state.resolvedKey = res.data;
-  state.paymentMode = null;
-  state.paymentOptions = [];
   state.buyStep = 'payment';
   render();
-
-  // Load payment methods for the selected product
   loadPaymentMethods(state.selectedProduct.code);
 }
+    
 
 async function loadPaymentMethods(productCode) {
   const res = await apiGet('getPaymentMethods', { productCode });
@@ -675,8 +672,8 @@ async function loadPaymentMethods(productCode) {
 
 function renderLicensePayment() {
   const d = state.resolvedKey;
+  const p = state.selectedProduct;   // ← use the product user chose
 
-  // Group payment options
   const bankOptions = state.paymentOptions.filter(o => o.mode === 'BANK');
   const telebirrOptions = state.paymentOptions.filter(o => o.mode === 'TELEBIRR');
 
@@ -684,19 +681,23 @@ function renderLicensePayment() {
     ${header('Payment Details', "state.buyStep='key'; render()")}
     <main class="px-4 pt-5 pb-36 space-y-4 fade-in">
 
-      <!-- Order Summary -->
+      <!-- Order Summary - uses selected product -->
       <div class="bg-card border border-border rounded-xl p-4 space-y-2 text-sm">
         <div class="flex justify-between">
           <span class="text-muted">Product</span>
-          <span class="font-medium">${d.productName}</span>
+          <span class="font-medium">${p?.name || d?.productName || '-'}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-muted">Product Key</span>
-          <span class="mono text-xs">${d.productKey}</span>
+          <span class="mono text-xs">${d?.productKey || state.productKey}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-muted">Type</span>
+          <span>${d?.isRenewal ? 'Renewal (Key ' + d.nextRenewal + ')' : 'New License'}</span>
         </div>
         <div class="flex justify-between pt-2 border-t border-border">
           <span class="text-muted">Amount to Pay</span>
-          <span class="text-emerald-400 font-bold text-lg">${d.price} ETB</span>
+          <span class="text-emerald-400 font-bold text-lg">${p?.price || d?.price || 0} ETB</span>
         </div>
       </div>
 
@@ -744,7 +745,7 @@ function renderLicensePayment() {
     </div>
     ${bottomNav('license')}`;
 }
-
+    
 function renderLicenseTxn() {
   return `
     ${header('Transaction Number', "state.buyStep='payment'; render()")}
@@ -974,10 +975,10 @@ function resetBuy() {
             </div>
 
             ${canRenew ? `
-              <button onclick="startRenewal('${l.productKey}')"
-                class="w-full py-2 rounded-lg bg-emerald-500/15 text-emerald-400 text-xs font-semibold">
-                🔄 Renew (get ${ordinals[renewal]} license key)
-              </button>
+              <button onclick="startRenewal('${l.productKey}', '${l.productCode}')"
+                  class="w-full py-2 rounded-lg bg-emerald-500/15 text-emerald-400 text-xs font-semibold">
+                   🔄 Renew (get next license key)
+                  </button>
             ` : `
               <div class="text-center text-xs text-amber-400 py-2">
                 All 5 keys issued — contact support to extend
@@ -993,14 +994,20 @@ function resetBuy() {
 }
 //==============start renewal===========
 
-function startRenewal(productKey) {
-  state.buyStep     = 'key';
-  state.productKey  = productKey;
+function startRenewal(productKey, productCode) {
+  // Find the product so payment page shows correct name & price
+  const product = state.products.find(p => p.code === productCode)
+               || state.products[0];
+
+  state.selectedProduct = product || null;
+  state.buyStep = 'key';
+  state.productKey = productKey;
   state.resolvedKey = null;
   state.paymentMode = null;
   state.paymentOptions = [];
-  state.txnNumber   = '';
+  state.txnNumber = '';
   state.currentOrderId = null;
+
   navigate('license');
 }
 
