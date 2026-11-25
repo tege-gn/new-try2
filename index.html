@@ -778,13 +778,13 @@ async function submitOrder() {
   toast('Submitting order...');
 
   const res = await apiPost('createOrder', {
-    chatId: state.user.chatId,
-    phone: state.user.phone || '',
-    productKey: state.productKey.trim(),
-    productCode: state.resolvedKey.productCode,
-    paymentMode: state.paymentMode || 'BANK',
-    txnNumber: state.txnNumber.trim()
-  });
+  chatId: state.user.chatId,
+  phone: state.user.phone || '',
+  productKey: state.productKey.trim(),
+  productCode: state.selectedProduct.code,  // important
+  paymentMode: state.paymentMode || 'BANK',
+  txnNumber: state.txnNumber.trim()
+});
 
   if (!res.success) {
     toast(res.message || 'Failed to submit order');
@@ -994,12 +994,21 @@ function resetBuy() {
 }
 //==============start renewal===========
 
-function startRenewal(productKey, productCode) {
-  // Find the product so payment page shows correct name & price
-  const product = state.products.find(p => p.code === productCode)
-               || state.products[0];
+async function startRenewal(productKey, productCode) {
+  // Make sure products are loaded
+  if (state.products.length === 0) {
+    toast('Loading...');
+    await loadProducts();
+  }
 
-  state.selectedProduct = product || null;
+  const product = state.products.find(p => p.code === productCode) || null;
+
+  if (!product) {
+    toast('Product not found');
+    return;
+  }
+
+  state.selectedProduct = product;
   state.buyStep = 'key';
   state.productKey = productKey;
   state.resolvedKey = null;
