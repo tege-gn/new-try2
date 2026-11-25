@@ -56,6 +56,7 @@
   resolvedKey: null,
   paymentMode: null,
   selectedProduct: null,
+  selectedProductCode: null,
   paymentOptions: [],
   txnNumber: '',
   currentOrderId: null,
@@ -135,6 +136,9 @@ checkIfRegistered();
 
     // ================= NAVIGATION =================
    function navigate(route) {
+     if (route !== 'products') {
+    state.selectedProductCode = null;
+  }
   // Admin can only access admin pages
   if (state.isAdmin) {
     if (!route.startsWith('admin')) {
@@ -494,51 +498,145 @@ async function rejectOrder(orderId) {
 }
 
     // ================= PRODUCTS =================
-    async function loadProducts() {
-      state.loading = true;
-      render();
-      const res = await apiGet('getProducts');
-      state.loading = false;
-      if (res.success) state.products = res.data || [];
-      else toast(res.message || 'Failed to load products');
-      render();
+    // ================= PRODUCTS =================
+async function loadProducts() {
+  state.loading = true;
+  render();
+  const res = await apiGet('getProducts');
+  state.loading = false;
+
+  if (res.success) {
+    state.products = res.data || [];
+  } else {
+    toast(res.message || 'Failed to load products');
+  }
+  render();
+}
+
+function renderProducts() {
+  // If a product is selected → show detail page
+  if (state.selectedProductCode) {
+    return renderProductDetail();
+  }
+
+  // Otherwise show list page
+  if (state.products.length === 0 && !state.loading) {
+    loadProducts();
+  }
+
+  return `
+    ${header('Products')}
+    <main class="px-4 pt-4 space-y-3 fade-in pb-28">
+      ${state.loading ? `<p class="text-center text-muted py-10">Loading...</p>` : ''}
+
+      ${state.products.map(p => `
+        <button onclick="openProduct('${p.code}')"
+          class="w-full flex items-center gap-3 p-4 bg-card border border-border rounded-xl text-left active:scale-[0.98] transition">
+          
+          <div class="w-12 h-12 rounded-xl bg-bg border border-border flex items-center justify-center overflow-hidden">
+            ${renderProductIcon(p)}
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="font-medium truncate">${p.name}</div>
+            <div class="text-xs text-muted">v${p.version || '-'} · ${p.price || 0} ETB</div>
+          </div>
+
+          <div class="text-muted text-lg">→</div>
+        </button>
+      `).join('') || (!state.loading ? `
+        <div class="text-center text-muted py-10">No products found</div>
+      ` : '')}
+    </main>
+    ${bottomNav('products')}`;
+}
+
+function openProduct(code) {
+  state.selectedProductCode = code;
+  window.scrollTo(0, 0);
+  render();
+}
+
+function closeProduct() {
+  state.selectedProductCode = null;
+  render();
+}
+
+function renderProductDetail() {
+  const p = state.products.find(x => x.code === state.selectedProductCode);
+
+  if (!p) {
+    state.selectedProductCode = null;
+    return renderProducts();
+  }
+
+  return `
+    ${header(p.name, "closeProduct()")}
+    <main class="px-4 pt-5 pb-28 space-y-5 fade-in">
+
+      <!-- Icon + basic info -->
+      <div class="flex flex-col items-center text-center">
+        <div class="w-20 h-20 rounded-2xl bg-card border border-border flex items-center justify-center overflow-hidden mb-3">
+          ${renderProductIcon(p, true)}
+        </div>
+        <h1 class="text-xl font-bold">${p.name}</h1>
+        <p class="text-muted text-sm mt-1">v${p.version || '-'} · ⭐ ${p.rating || '-'}</p>
+        <p class="text-emerald-400 font-semibold mt-1">${p.price || 0} ETB</p>
+      </div>
+
+      <!-- Description (Column C) -->
+      <div class="bg-card border border-border rounded-xl p-4">
+        <h2 class="text-xs uppercase tracking-wider text-muted mb-2">About</h2>
+        <p class="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+          ${p.description || 'No description available.'}
+        </p>
+      </div>
+
+      <!-- Download Button -->
+      <button onclick="downloadApk('${p.code}')"
+        class="w-full py-3.5 rounded-xl bg-emerald-500 text-white font-semibold active:scale-[0.98] transition">
+        ⬇ Download APK
+      </button>
+
+      <p class="text-xs text-muted text-center">
+        After installing, use the License tab to activate with your Product Key.
+      </p>
+
+    </main>
+    ${bottomNav('products')}`;
+}
+
+// Helper: show emoji or image icon
+function renderProductIcon(p, large = false) {
+  const icon = p.icon || '';
+  const sizeClass = large ? 'text-4xl' : 'text-2xl';
+
+  // If it looks like a URL or Google Drive link → show as image
+  if (icon.startsWith('http') || icon.includes('drive.google.com') || icon.length > 30) {
+    let src = icon;
+
+    // Support Google Drive file ID
+    if (!icon.startsWith('http') && icon.length > 20) {
+      src = 'https://drive.google.com/uc?export=view&id=' + icon;
     }
 
-    function renderProducts() {
-      if (state.products.length === 0 && !state.loading) loadProducts();
+    return `<img src="${src}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.style.display='none'" />`;
+  }
 
-      return `
-        ${header('Products')}
-        <main class="px-4 pt-4 space-y-3 fade-in">
-          ${state.loading ? `<p class="text-center text-muted py-10">Loading...</p>` : ''}
-          ${state.products.map(p => `
-            <div class="bg-card border border-border rounded-xl p-4">
-              <div class="flex items-center gap-3 mb-2">
-                <div class="text-3xl">${p.icon || '📦'}</div>
-                <div>
-                  <div class="font-medium">${p.name}</div>
-                  <div class="text-xs text-muted">v${p.version} · ${p.price} ETB</div>
-                </div>
-              </div>
-              <p class="text-sm text-slate-300 mb-3">${p.description || ''}</p>
-              <button onclick="downloadApk('${p.code}')" class="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold">
-                ⬇ Download APK
-              </button>
-            </div>
-          `).join('') || (!state.loading ? `<p class="text-center text-muted py-10">No products found</p>` : '')}
-        </main>
-        ${bottomNav('products')}`;
-    }
+  // Otherwise treat as emoji / text
+  return `<span class="${sizeClass}">${icon || '📦'}</span>`;
+}
 
-    async function downloadApk(code) {
-      toast('Getting link...');
-      const res = await apiGet('getApkLink', { productCode: code });
-      if (res.success && res.data?.downloadUrl) {
-        window.open(res.data.downloadUrl, '_blank');
-      } else {
-        toast(res.message || 'Download not available');
-      }
-    }
+async function downloadApk(code) {
+  toast('Getting download link...');
+  const res = await apiGet('getApkLink', { productCode: code });
+
+  if (res.success && res.data?.downloadUrl) {
+    window.open(res.data.downloadUrl, '_blank');
+  } else {
+    toast(res.message || 'Download not available');
+  }
+}
 
     // ================= LICENSE FLOW =================
 
