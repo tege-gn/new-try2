@@ -55,6 +55,7 @@
   productKey: '',
   resolvedKey: null,
   paymentMode: null,
+  selectedProduct: null,
   paymentOptions: [],
   txnNumber: '',
   currentOrderId: null,
@@ -151,6 +152,9 @@ checkIfRegistered();
   window.scrollTo(0, 0);
   render();
 
+if (route === 'license' && state.products.length === 0) {
+  loadProducts();
+}
   if (route === 'admin-approvals') {
     loadPendingOrders();
   }
@@ -537,25 +541,74 @@ async function rejectOrder(orderId) {
     }
 
     // ================= LICENSE FLOW =================
+
 function renderLicense() {
-  if (!state.buyStep) state.buyStep = 'key';
+  if (!state.buyStep) state.buyStep = 'product';   // start with product selection
 
   switch (state.buyStep) {
+    case 'product':  return renderLicenseProduct();
     case 'key':      return renderLicenseKey();
-    case 'payment':  return renderLicensePayment();   // price + payment details
+    case 'payment':  return renderLicensePayment();
     case 'txn':      return renderLicenseTxn();
     case 'done':     return renderLicenseDone();
-    default:         state.buyStep = 'key'; return renderLicenseKey();
+    default:         state.buyStep = 'product'; return renderLicenseProduct();
   }
 }
 
-function renderLicenseKey() {
+// STEP 1: Choose Product
+function renderLicenseProduct() {
   return `
     ${header('Buy License')}
     <main class="px-4 pt-6 pb-32 space-y-5 fade-in">
       <div class="text-center">
         <div class="text-4xl mb-2">🔑</div>
-        <p class="text-sm text-slate-300">Enter your Product Key to continue</p>
+        <h2 class="font-semibold text-lg">Choose Product</h2>
+        <p class="text-sm text-muted mt-1">Select which app you want to buy a license for</p>
+      </div>
+
+      <div class="space-y-3">
+        ${state.products.length ? state.products.map(p => `
+          <button onclick="selectLicenseProduct('${p.code}')"
+            class="w-full flex items-center gap-3 p-4 bg-card border border-border rounded-xl text-left active:scale-[0.98] transition">
+            <div class="text-3xl">${p.icon || '📦'}</div>
+            <div class="flex-1">
+              <div class="font-medium">${p.name}</div>
+              <div class="text-xs text-muted">v${p.version} · ${p.price} ETB</div>
+            </div>
+            <div class="text-emerald-400">→</div>
+          </button>
+        `).join('') : `
+          <div class="text-center text-muted py-8">Loading products...</div>
+        `}
+      </div>
+    </main>
+    ${bottomNav('license')}`;
+}
+
+function selectLicenseProduct(code) {
+  const product = state.products.find(p => p.code === code);
+  if (!product) return toast('Product not found');
+
+  state.selectedProduct = product;
+  state.buyStep = 'key';
+  render();
+}
+
+// STEP 2: Enter Product Key
+function renderLicenseKey() {
+  const p = state.selectedProduct;
+
+  return `
+    ${header('Product Key', "state.buyStep='product'; render()")}
+    <main class="px-4 pt-6 pb-32 space-y-5 fade-in">
+
+      <!-- Selected Product -->
+      <div class="bg-card border border-border rounded-xl p-3 flex items-center gap-3">
+        <div class="text-2xl">${p?.icon || '📦'}</div>
+        <div>
+          <div class="font-medium text-sm">${p?.name || ''}</div>
+          <div class="text-xs text-muted">${p?.price || 0} ETB</div>
+        </div>
       </div>
 
       <div>
@@ -565,6 +618,17 @@ function renderLicenseKey() {
           placeholder="e.g. 178D4F76"
           class="w-full bg-bg border border-border rounded-lg px-3 py-3 text-sm mono" />
       </div>
+
+      <!-- How it works explanation -->
+      <div class="bg-card border border-border rounded-xl p-4 text-sm text-muted space-y-2">
+        <div class="font-medium text-slate-300 mb-1">How license purchase works</div>
+        <p>1. Enter the <span class="text-slate-200">Product Key</span> that appears in your app.</p>
+        <p>2. Make payment using Bank or Telebirr.</p>
+        <p>3. Submit the Transaction Number.</p>
+        <p>4. After approval you will receive your License Key.</p>
+        <p class="pt-1 text-xs">The same Product Key can be used later for renewal (Key 2, Key 3...).</p>
+      </div>
+
     </main>
 
     <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
@@ -577,9 +641,14 @@ function renderLicenseKey() {
 
 async function resolveKey() {
   if (!state.productKey.trim()) return toast('Please enter Product Key');
+  if (!state.selectedProduct) return toast('Please select a product first');
 
   toast('Checking Product Key...');
-  const res = await apiPost('resolveKey', { productKey: state.productKey.trim() });
+  const res = await apiPost('resolveKey', {
+    productKey: state.productKey.trim(),
+    chatId: state.user.chatId,
+    productCode: state.selectedProduct.code
+  });
 
   if (!res.success) {
     toast(res.message || 'Invalid Product Key');
@@ -592,8 +661,8 @@ async function resolveKey() {
   state.buyStep = 'payment';
   render();
 
-  // Load payment methods
-  loadPaymentMethods(res.data.productCode);
+  // Load payment methods for the selected product
+  loadPaymentMethods(state.selectedProduct.code);
 }
 
 async function loadPaymentMethods(productCode) {
@@ -761,6 +830,7 @@ function renderLicenseDone() {
 
 function resetBuy() {
   state.buyStep = null;
+  state.selectedProduct = null;
   state.productKey = '';
   state.resolvedKey = null;
   state.paymentMode = null;
