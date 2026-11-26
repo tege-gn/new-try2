@@ -135,20 +135,12 @@ checkIfRegistered();
     }
 
     // ================= NAVIGATION =================
-   function navigate(route) {
-     if (route !== 'products') {
-    state.selectedProductCode = null;
-  }
-     if (route === 'admin-dashboard') {
-  setTimeout(loadAdminDashboard, 50);
-}
-  // Admin can only access admin pages
+  function navigate(route) {
   if (state.isAdmin) {
     if (!route.startsWith('admin')) {
       route = 'admin-dashboard';
     }
   } else {
-    // Normal user protection
     if (!state.user.registered && route !== 'profile' && route !== 'home') {
       toast('Please register first');
       route = 'profile';
@@ -159,11 +151,12 @@ checkIfRegistered();
   window.scrollTo(0, 0);
   render();
 
-if (route === 'license' && state.products.length === 0) {
-  loadProducts();
-}
   if (route === 'admin-approvals') {
     loadPendingOrders();
+  }
+
+  if (route === 'admin-dashboard') {
+    setTimeout(loadAdminDashboard, 150);
   }
 }
 
@@ -1228,7 +1221,7 @@ async function startRenewal(productKey, productCode) {
 
       
     // ================= RENDER =================
-   function render() {
+  function render() {
   if (!state.appReady) {
     document.getElementById('app').innerHTML = `
       <div class="min-h-screen flex items-center justify-center">
@@ -1259,6 +1252,11 @@ async function startRenewal(productKey, productCode) {
   if (state.route === 'profile') loadProfileData();
   if (state.route === 'admin-approvals' || state.route === 'admin') {
     renderPendingList();
+  }
+
+  // Fix: load stats after HTML is in the page
+  if (state.route === 'admin-dashboard') {
+    setTimeout(loadAdminDashboard, 150);
   }
 }
     render();
