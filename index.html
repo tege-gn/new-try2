@@ -518,11 +518,9 @@ function getDriveImageUrl(link) {
   if (!link) return null;
 
   let fileId = null;
+  const str = String(link).trim();
 
-  // Case 1: Full Google Drive link
-  // https://drive.google.com/file/d/FILE_ID/view
-  // https://drive.google.com/open?id=FILE_ID
-  // https://drive.google.com/uc?id=FILE_ID
+  // Extract File ID from different Drive link formats
   const patterns = [
     /\/file\/d\/([a-zA-Z0-9_-]+)/,
     /[?&]id=([a-zA-Z0-9_-]+)/,
@@ -530,59 +528,58 @@ function getDriveImageUrl(link) {
   ];
 
   for (const pattern of patterns) {
-    const match = link.match(pattern);
+    const match = str.match(pattern);
     if (match && match[1]) {
       fileId = match[1];
       break;
     }
   }
 
-  // Case 2: User already put only the File ID
-  if (!fileId && /^[a-zA-Z0-9_-]{20,}$/.test(link)) {
-    fileId = link;
+  // Only File ID was pasted
+  if (!fileId && /^[a-zA-Z0-9_-]{25,}$/.test(str)) {
+    fileId = str;
   }
 
-  // Case 3: Already a direct image link
-  if (!fileId && link.startsWith('http')) {
-    return link;
+  // Already a normal image URL
+  if (!fileId && str.startsWith('http') && !str.includes('drive.google.com')) {
+    return str;
   }
 
   if (!fileId) return null;
 
-  // Best direct image URL for Google Drive
-  return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  // More reliable Google Drive image URL
+  return `https://lh3.googleusercontent.com/d/${fileId}`;
 }
+    
 // Helper: show emoji or image icon
 function renderProductIcon(p, large = false) {
   const icon = (p.icon || '').toString().trim();
   const sizeClass = large ? 'text-4xl' : 'text-2xl';
 
-  // Empty → fallback emoji
+  console.log('ICON VALUE:', icon);   // ← check browser console
+
   if (!icon) {
     return `<span class="${sizeClass}">📦</span>`;
   }
 
-  // Short value = emoji
   if (icon.length <= 4 && !icon.includes('http') && !icon.includes('drive')) {
     return `<span class="${sizeClass}">${icon}</span>`;
   }
 
-  // Convert any Google Drive link into a direct image URL
   const imageUrl = getDriveImageUrl(icon);
+  console.log('IMAGE URL:', imageUrl);
 
   if (imageUrl) {
     return `
       <img src="${imageUrl}" 
            class="w-full h-full object-cover" 
            alt="${p.name || ''}"
-           onerror="this.parentElement.innerHTML='<span class=\\'${sizeClass}\\'>📦</span>'" />
+           onerror="console.log('IMAGE FAILED:', this.src); this.parentElement.innerHTML='<span class=\\'${sizeClass}\\'>📦</span>'" />
     `;
   }
 
-  // Fallback
   return `<span class="${sizeClass}">📦</span>`;
 }
-
 
     
 function renderProducts() {
