@@ -139,6 +139,9 @@ checkIfRegistered();
      if (route !== 'products') {
     state.selectedProductCode = null;
   }
+     if (route === 'admin-dashboard') {
+  setTimeout(loadAdminDashboard, 50);
+}
   // Admin can only access admin pages
   if (state.isAdmin) {
     if (!route.startsWith('admin')) {
@@ -239,39 +242,87 @@ function renderAdminDashboard() {
     ${header('Admin Dashboard')}
     <main class="px-4 pt-5 space-y-4 fade-in pb-28">
 
+      <!-- Admin info -->
       <div class="bg-card border border-border rounded-xl p-4">
-        <div class="text-sm text-muted">Logged in as Admin</div>
-        <div class="font-semibold mt-1">${state.user.name || 'Admin'}</div>
+        <div class="text-xs text-muted">Logged in as Admin</div>
+        <div class="font-semibold mt-0.5">${state.user.name || 'Admin'}</div>
         <div class="text-xs text-muted mono">${state.user.chatId}</div>
       </div>
 
-      <div class="grid grid-cols-2 gap-3">
+      <!-- Stats cards -->
+      <div class="grid grid-cols-2 gap-3" id="adminStats">
         <div class="bg-card border border-border rounded-xl p-4 text-center">
-          <div class="text-2xl font-bold text-amber-400" id="pendingCount">-</div>
+          <div class="text-2xl font-bold text-amber-400" id="statPending">-</div>
           <div class="text-xs text-muted mt-1">Pending Orders</div>
         </div>
         <div class="bg-card border border-border rounded-xl p-4 text-center">
-          <div class="text-2xl font-bold text-emerald-400">✓</div>
-          <div class="text-xs text-muted mt-1">Manual Approval</div>
+          <div class="text-2xl font-bold text-emerald-400" id="statSold">-</div>
+          <div class="text-xs text-muted mt-1">Sold Licenses</div>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-sky-400" id="statMonth">-</div>
+          <div class="text-xs text-muted mt-1">Approved This Month</div>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-violet-400" id="statUsers">-</div>
+          <div class="text-xs text-muted mt-1">Registered Users</div>
         </div>
       </div>
 
+      <!-- Quick action -->
       <button onclick="navigate('admin-approvals')" 
         class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">
-        Go to Approvals
+        ✅ Go to Approvals
       </button>
 
-      <div class="bg-card border border-border rounded-xl p-4 text-sm text-muted">
-        <p class="mb-2 font-medium text-slate-300">Admin Functions</p>
-        <ul class="space-y-1 list-disc list-inside">
-          <li>Review pending payments</li>
-          <li>Approve orders & send license keys</li>
-          <li>Monitor license assignments</li>
-        </ul>
+      <!-- Latest pending preview -->
+      <div class="bg-card border border-border rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="font-medium text-sm">Latest Pending</div>
+          <button onclick="loadAdminDashboard()" class="text-xs text-emerald-400">Refresh</button>
+        </div>
+        <div id="latestPending" class="space-y-2 text-sm text-muted">
+          Loading...
+        </div>
       </div>
 
     </main>
     ${bottomNav('admin-dashboard')}`;
+}
+
+    // Load Admin Dashnoard-------------
+    
+async function loadAdminDashboard() {
+  // Load stats
+  const statsRes = await apiGet('getAdminStats');
+  if (statsRes.success) {
+    const d = statsRes.data;
+    const el = (id) => document.getElementById(id);
+    if (el('statPending')) el('statPending').textContent = d.pendingOrders;
+    if (el('statSold')) el('statSold').textContent = d.soldLicenses;
+    if (el('statMonth')) el('statMonth').textContent = d.approvedThisMonth;
+    if (el('statUsers')) el('statUsers').textContent = d.registeredUsers;
+  }
+
+  // Load latest pending (max 3)
+  const pendingRes = await apiGet('getPendingOrders');
+  const container = document.getElementById('latestPending');
+  if (!container) return;
+
+  if (pendingRes.success && pendingRes.data.length) {
+    const latest = pendingRes.data.slice(0, 3);
+    container.innerHTML = latest.map(o => `
+      <div class="flex justify-between items-center py-2 border-b border-border last:border-0">
+        <div>
+          <div class="font-medium text-slate-200">${o.productCode}</div>
+          <div class="text-xs text-muted mono">${o.productKey}</div>
+        </div>
+        <div class="text-xs text-amber-400">PENDING</div>
+      </div>
+    `).join('');
+  } else {
+    container.innerHTML = `<div class="text-center py-3">No pending orders</div>`;
+  }
 }
     
 async function loadPendingOrders() {
