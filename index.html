@@ -608,23 +608,34 @@ function renderProductDetail() {
 
 // Helper: show emoji or image icon
 function renderProductIcon(p, large = false) {
-  const icon = p.icon || '';
+  const icon = (p.icon || '').toString().trim();
   const sizeClass = large ? 'text-4xl' : 'text-2xl';
 
-  // If it looks like a URL or Google Drive link → show as image
-  if (icon.startsWith('http') || icon.includes('drive.google.com') || icon.length > 30) {
-    let src = icon;
-
-    // Support Google Drive file ID
-    if (!icon.startsWith('http') && icon.length > 20) {
-      src = 'https://drive.google.com/uc?export=view&id=' + icon;
-    }
-
-    return `<img src="${src}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.style.display='none'" />`;
+  // Empty → fallback
+  if (!icon) {
+    return `<span class="${sizeClass}">📦</span>`;
   }
 
-  // Otherwise treat as emoji / text
-  return `<span class="${sizeClass}">${icon || '📦'}</span>`;
+  // If it's a short value, treat as emoji
+  if (icon.length <= 4) {
+    return `<span class="${sizeClass}">${icon}</span>`;
+  }
+
+  // Google Drive File ID (no http)
+  if (!icon.startsWith('http') && icon.length > 15) {
+    const src = `https://drive.google.com/uc?export=view&id=${icon}`;
+    return `<img src="${src}" class="w-full h-full object-cover" alt="" 
+              onerror="this.parentElement.innerHTML='<span class=\\'${sizeClass}\\'>📦</span>'" />`;
+  }
+
+  // Full image URL (png, jpg, webp...)
+  if (icon.startsWith('http')) {
+    return `<img src="${icon}" class="w-full h-full object-cover" alt="" 
+              onerror="this.parentElement.innerHTML='<span class=\\'${sizeClass}\\'>📦</span>'" />`;
+  }
+
+  // Fallback
+  return `<span class="${sizeClass}">📦</span>`;
 }
 
 async function downloadApk(code) {
