@@ -513,37 +513,6 @@ async function loadProducts() {
   render();
 }
 
-// Helper: show emoji or image icon
-function renderProductIcon(p, large = false) {
-  const icon = (p.icon || '').toString().trim();
-  const sizeClass = large ? 'text-4xl' : 'text-2xl';
-
-  // Empty → fallback emoji
-  if (!icon) {
-    return `<span class="${sizeClass}">📦</span>`;
-  }
-
-  // Short value = emoji
-  if (icon.length <= 4 && !icon.includes('http') && !icon.includes('drive')) {
-    return `<span class="${sizeClass}">${icon}</span>`;
-  }
-
-  // Convert any Google Drive link into a direct image URL
-  const imageUrl = getDriveImageUrl(icon);
-
-  if (imageUrl) {
-    return `
-      <img src="${imageUrl}" 
-           class="w-full h-full object-cover" 
-           alt="${p.name || ''}"
-           onerror="this.parentElement.innerHTML='<span class=\\'${sizeClass}\\'>📦</span>'" />
-    `;
-  }
-
-  // Fallback
-  return `<span class="${sizeClass}">📦</span>`;
-}
-
 // Helper: convert Google Drive links to direct image URL
 function getDriveImageUrl(link) {
   if (!link) return null;
@@ -583,6 +552,38 @@ function getDriveImageUrl(link) {
   // Best direct image URL for Google Drive
   return `https://drive.google.com/uc?export=view&id=${fileId}`;
 }
+// Helper: show emoji or image icon
+function renderProductIcon(p, large = false) {
+  const icon = (p.icon || '').toString().trim();
+  const sizeClass = large ? 'text-4xl' : 'text-2xl';
+
+  // Empty → fallback emoji
+  if (!icon) {
+    return `<span class="${sizeClass}">📦</span>`;
+  }
+
+  // Short value = emoji
+  if (icon.length <= 4 && !icon.includes('http') && !icon.includes('drive')) {
+    return `<span class="${sizeClass}">${icon}</span>`;
+  }
+
+  // Convert any Google Drive link into a direct image URL
+  const imageUrl = getDriveImageUrl(icon);
+
+  if (imageUrl) {
+    return `
+      <img src="${imageUrl}" 
+           class="w-full h-full object-cover" 
+           alt="${p.name || ''}"
+           onerror="this.parentElement.innerHTML='<span class=\\'${sizeClass}\\'>📦</span>'" />
+    `;
+  }
+
+  // Fallback
+  return `<span class="${sizeClass}">📦</span>`;
+}
+
+
     
 function renderProducts() {
   // If a product is selected → show detail page
