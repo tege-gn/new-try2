@@ -661,110 +661,15 @@ async function rejectOrder(orderId) {
     // ================= HOME =================
   function renderHome() {
   return `
-    ${header(t('home_title'))}
+    ${header('PIS License Store')}
     <main class="px-4 pt-5 space-y-5 fade-in pb-8">
-
-      <!-- Hero -->
-      <div class="bg-gradient-to-br from-emerald-500/20 to-card border border-border rounded-2xl p-5 text-center">
+      <div class="bg-card border border-border rounded-2xl p-5 text-center">
         <div class="text-4xl mb-2">🔐</div>
-        <h2 class="text-xl font-bold text-emerald-400">${t('home_title')}</h2>
-        <p class="text-sm text-slate-300 mt-2">${t('home_subtitle')}</p>
-        
-        <!-- Language Switcher -->
-        ${languageSwitcher()}
+        <h2 class="text-xl font-bold text-emerald-400">PIS License Store</h2>
+        <p class="text-sm text-slate-300 mt-2">Home is working</p>
+        ${typeof languageSwitcher === 'function' ? languageSwitcher() : '<p class="text-xs text-red-400 mt-2">languageSwitcher missing</p>'}
       </div>
-
-      <!-- Registration Status -->
-      ${!state.user.registered ? `
-        <div class="bg-amber-500/10 border border-amber-500/40 rounded-xl p-4">
-          <div class="font-medium text-amber-300 mb-1">${t('registration_required')}</div>
-          <p class="text-sm text-slate-300 mb-3">${t('registration_required_desc')}</p>
-          <button onclick="navigate('profile')" class="w-full py-2.5 rounded-lg bg-amber-500 text-black font-semibold text-sm">
-            ${t('register_now')}
-          </button>
-        </div>
-      ` : `
-        <div class="bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-4 flex items-center gap-3">
-          <div class="text-2xl">✅</div>
-          <div>
-            <div class="font-medium text-emerald-300">${t('welcome')}, ${state.user.name}</div>
-            <div class="text-xs text-muted">${t('you_are_registered')}</div>
-          </div>
-        </div>
-      `}
-
-      <!-- How it works -->
-      <div class="bg-card border border-border rounded-xl p-4">
-        <h3 class="text-sm font-semibold mb-3 text-slate-200">${t('how_it_works')}</h3>
-        <div class="space-y-3 text-sm">
-          <div class="flex gap-3">
-            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">1</div>
-            <div>
-              <div class="font-medium">${t('step1_title')}</div>
-              <div class="text-muted text-xs">${t('step1_desc')}</div>
-            </div>
-          </div>
-          <div class="flex gap-3">
-            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">2</div>
-            <div>
-              <div class="font-medium">${t('step2_title')}</div>
-              <div class="text-muted text-xs">${t('step2_desc')}</div>
-            </div>
-          </div>
-          <div class="flex gap-3">
-            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">3</div>
-            <div>
-              <div class="font-medium">${t('step3_title')}</div>
-              <div class="text-muted text-xs">${t('step3_desc')}</div>
-            </div>
-          </div>
-          <div class="flex gap-3">
-            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">4</div>
-            <div>
-              <div class="font-medium">${t('step4_title')}</div>
-              <div class="text-muted text-xs">${t('step4_desc')}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Features -->
-      <div class="bg-card border border-border rounded-xl p-4">
-        <h3 class="text-sm font-semibold mb-3 text-slate-200">${t('features')}</h3>
-        <div class="grid grid-cols-2 gap-3 text-sm">
-          <div class="bg-bg rounded-lg p-3 border border-border">
-            <div class="text-lg mb-1">⚡</div>
-            <div class="font-medium">${t('feature_fast')}</div>
-            <div class="text-xs text-muted">${t('feature_fast_desc')}</div>
-          </div>
-          <div class="bg-bg rounded-lg p-3 border border-border">
-            <div class="text-lg mb-1">🔒</div>
-            <div class="font-medium">${t('feature_secure')}</div>
-            <div class="text-xs text-muted">${t('feature_secure_desc')}</div>
-          </div>
-          <div class="bg-bg rounded-lg p-3 border border-border">
-            <div class="text-lg mb-1">📱</div>
-            <div class="font-medium">${t('feature_offline')}</div>
-            <div class="text-xs text-muted">${t('feature_offline_desc')}</div>
-          </div>
-          <div class="bg-bg rounded-lg p-3 border border-border">
-            <div class="text-lg mb-1">💳</div>
-            <div class="font-medium">${t('feature_payment')}</div>
-            <div class="text-xs text-muted">${t('feature_payment_desc')}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="grid grid-cols-2 gap-3">
-        <button onclick="navigate('products')" class="py-3 rounded-xl bg-card border border-border font-medium text-sm">
-          🛍 ${t('nav_products')}
-        </button>
-        <button onclick="navigate('license')" class="py-3 rounded-xl bg-emerald-500 text-white font-medium text-sm">
-          🔑 ${t('buy_license')}
-        </button>
-      </div>
-
+      <p class="text-sm text-muted text-center">If you see this, Home render works.</p>
     </main>
     ${bottomNav('home')}`;
 }
