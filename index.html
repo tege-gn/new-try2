@@ -639,28 +639,38 @@ function renderProducts() {
 
   return `
     ${header('Products')}
-    <main class="px-4 pt-4 space-y-3 fade-in pb-28">
-      ${state.loading ? `<p class="text-center text-muted py-10">Loading...</p>` : ''}
+    <main class="px-4 pt-5 space-y-4 fade-in pb-28">
+  
+  <!-- Header Section -->
+  <div class="space-y-1 mb-2">
+    <h1 class="text-2xl font-bold text-slate-100">Our Products</h1>
+    <p class="text-sm text-muted">Download the latest POS software for your pharmacy or clinic.</p>
+  </div>
 
-      ${state.products.map(p => `
-        <button onclick="openProduct('${p.code}')"
-          class="w-full flex items-center gap-3 p-4 bg-card border border-border rounded-xl text-left active:scale-[0.98] transition">
-          
-          <div class="w-12 h-12 rounded-xl bg-bg border border-border flex items-center justify-center overflow-hidden">
-            ${renderProductIcon(p)}
-          </div>
+  <!-- List Section -->
+  <div class="space-y-3">
+    ${state.loading ? `<p class="text-center text-muted py-10">Loading...</p>` : ''}
 
-          <div class="flex-1 min-w-0">
-            <div class="font-medium truncate">${p.name}</div>
-            <div class="text-xs text-muted">v${p.version || '-'} · ${p.price || 0} ETB</div>
-          </div>
+    ${state.products.map(p => `
+      <button onclick="openProduct('${p.code}')"
+        class="w-full flex items-center gap-3 p-4 bg-card border border-border rounded-xl text-left active:scale-[0.98] transition">
+        
+        <div class="w-12 h-12 rounded-xl bg-bg border border-border flex items-center justify-center overflow-hidden">
+          ${renderProductIcon(p)}
+        </div>
 
-          <div class="text-muted text-lg">→</div>
-        </button>
-      `).join('') || (!state.loading ? `
-        <div class="text-center text-muted py-10">No products found</div>
-      ` : '')}
-    </main>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">${p.name}</div>
+          <div class="text-xs text-muted">v${p.version || '-'} · ${p.price || 0} ETB</div>
+        </div>
+
+        <div class="text-muted text-lg">→</div>
+      </button>
+    `).join('') || (!state.loading ? `
+      <div class="text-center text-muted py-10">No products found</div>
+    ` : '')}
+  </div>
+</main>
     ${bottomNav('products')}`;
 }
 
