@@ -69,233 +69,7 @@
 };
 
 
-// ================= LANGUAGE =================
-const i18n = {
-  en: {
-    // Navigation
-    nav_home: "Home",
-    nav_products: "Products",
-    nav_license: "License",
-    nav_profile: "Profile",
 
-    // Common
-    continue: "Continue",
-    loading: "Loading...",
-    register: "Register",
-    register_now: "Register Now",
-    download_apk: "Download APK",
-    buy_license: "Buy License",
-    back: "Back",
-
-    // Home
-    home_title: "PIS License Store",
-    home_subtitle: "Official license activation for Pharmacy & Clinic POS systems.",
-    registration_required: "Registration Required",
-    registration_required_desc: "Please register first to buy a license.",
-    welcome: "Welcome",
-    you_are_registered: "You are registered",
-    how_it_works: "How it works",
-    step1_title: "Register",
-    step1_desc: "Create your account using phone number",
-    step2_title: "Download APK",
-    step2_desc: "Get the app from Products page",
-    step3_title: "Buy License",
-    step3_desc: "Enter Product Key and make payment",
-    step4_title: "Activate",
-    step4_desc: "Receive License Key after approval",
-    features: "Features",
-    feature_fast: "Fast Activation",
-    feature_fast_desc: "Quick license delivery",
-    feature_secure: "Secure",
-    feature_secure_desc: "Unique product keys",
-    feature_offline: "Offline App",
-    feature_offline_desc: "Works without internet",
-    feature_payment: "Local Payment",
-    feature_payment_desc: "Bank & Telebirr",
-
-    // Products
-    products_title: "Products",
-    about: "About",
-    no_products: "No products found",
-    after_install: "After installing, use the License tab to activate with your Product Key.",
-    no_description: "No description available.",
-
-    // License
-    choose_product: "Choose Product",
-    choose_product_desc: "Select which app you want to buy a license for",
-    product_key: "Product Key",
-    enter_product_key: "Enter your Product Key",
-    how_license_works: "How license purchase works",
-    license_step1: "Enter the Product Key that appears in your app.",
-    license_step2: "Make payment using Bank or Telebirr.",
-    license_step3: "Submit the Transaction Number.",
-    license_step4: "After approval you will receive your License Key.",
-    license_renewal_note: "The same Product Key can be used later for renewal.",
-    payment_details: "Payment Details",
-    amount_to_pay: "Amount to Pay",
-    payment_methods: "Payment Methods",
-    bank_transfer: "Bank Transfer",
-    telebirr: "Telebirr",
-    i_have_paid: "I Have Paid",
-    transaction_number: "Transaction Number",
-    enter_txn: "Enter the Transaction Number from your payment receipt.",
-    submit_order: "Submit Order",
-    order_submitted: "Order Submitted",
-    under_process: "Under Process for Approval",
-    pending_approval: "Pending Approval",
-    wait_approval: "Your payment is being reviewed. You will receive the License Key after approval.",
-    go_to_orders: "Go to My Orders",
-    new_license: "New License",
-    renewal: "Renewal",
-
-    // Profile
-    profile_title: "Profile",
-    registration_required_title: "Registration Required",
-    full_name: "Full Name",
-    phone_number: "Phone Number",
-    my_licenses: "My Licenses",
-    my_orders: "My Orders",
-    no_licenses: "No licenses yet",
-    no_orders: "No orders yet",
-    registered: "Registered",
-    renew: "Renew",
-    get_next_key: "get next license key",
-    all_keys_issued: "All 5 keys issued — contact support to extend",
-
-    // Toasts / messages
-    please_register: "Please register first",
-    enter_name_phone: "Enter name and phone",
-    telegram_not_found: "Telegram ID not found",
-    enter_product_key_toast: "Please enter Product Key",
-    select_product_first: "Please select a product first",
-    invalid_key: "Invalid Product Key",
-    enter_txn_toast: "Please enter Transaction Number",
-    user_not_found: "User not found",
-    order_failed: "Failed to submit order",
-    registered_success: "Registered successfully"
-  },
-
-  am: {
-    // Navigation
-    nav_home: "መነሻ",
-    nav_products: "ምርቶች",
-    nav_license: "ፈቃድ",
-    nav_profile: "መገለጫ",
-
-    // Common
-    continue: "ቀጥል",
-    loading: "በመጫን ላይ...",
-    register: "ይመዝገቡ",
-    register_now: "አሁን ይመዝገቡ",
-    download_apk: "APK አውርድ",
-    buy_license: "ፈቃድ ግዛ",
-    back: "ተመለስ",
-
-    // Home
-    home_title: "PIS የፈቃድ መደብር",
-    home_subtitle: "ለፋርማሲ እና ክሊኒክ POS ስርዓቶች ኦፊሴላዊ የፈቃድ ማግበሪያ።",
-    registration_required: "ምዝገባ ያስፈልጋል",
-    registration_required_desc: "ፈቃድ ለመግዛት መጀመሪያ ይመዝገቡ።",
-    welcome: "እንኳን ደህና መጡ",
-    you_are_registered: "ተመዝግበዋል",
-    how_it_works: "እንዴት እንደሚሰራ",
-    step1_title: "ይመዝገቡ",
-    step1_desc: "በስልክ ቁጥርዎ መለያ ይፍጠሩ",
-    step2_title: "APK አውርድ",
-    step2_desc: "ከምርቶች ገጽ መተግበሪያውን ያግኙ",
-    step3_title: "ፈቃድ ግዛ",
-    step3_desc: "የምርት ቁልፍ ያስገቡ እና ክፍያ ይፈጽሙ",
-    step4_title: "ያግብሩ",
-    step4_desc: "ከፀደቀ በኋላ የፈቃድ ቁልፍ ይደርስዎታል",
-    features: "ባህሪያት",
-    feature_fast: "ፈጣን ማግበሪያ",
-    feature_fast_desc: "ፈጣን የፈቃድ አቅርቦት",
-    feature_secure: "ደህንነቱ የተጠበቀ",
-    feature_secure_desc: "ልዩ የምርት ቁልፎች",
-    feature_offline: "ኦፍላይን መተግበሪያ",
-    feature_offline_desc: "ያለ ኢንተርኔት ይሰራል",
-    feature_payment: "የአካባቢ ክፍያ",
-    feature_payment_desc: "ባንክ እና ቴሌብር",
-
-    // Products
-    products_title: "ምርቶች",
-    about: "ስለ",
-    no_products: "ምንም ምርት አልተገኘም",
-    after_install: "ከጫኑ በኋላ፣ በፈቃድ ትር የምርት ቁልፍዎን በመጠቀም ያግብሩ።",
-    no_description: "መግለጫ የለም።",
-
-    // License
-    choose_product: "ምርት ይምረጡ",
-    choose_product_desc: "ፈቃድ መግዛት የሚፈልጉትን መተግበሪያ ይምረጡ",
-    product_key: "የምርት ቁልፍ",
-    enter_product_key: "የምርት ቁልፍዎን ያስገቡ",
-    how_license_works: "የፈቃድ ግዢ እንዴት እንደሚሰራ",
-    license_step1: "በመተግበሪያዎ ላይ የሚታየውን የምርት ቁልፍ ያስገቡ።",
-    license_step2: "በባንክ ወይም ቴሌብር ክፍያ ይፈጽሙ።",
-    license_step3: "የግብይት ቁጥሩን ያስገቡ።",
-    license_step4: "ከፀደቀ በኋላ የፈቃድ ቁልፍ ይደርስዎታል።",
-    license_renewal_note: "ተመሳሳይ የምርት ቁልፍ በኋላ ለእድሳት ሊያገለግል ይችላል።",
-    payment_details: "የክፍያ ዝርዝሮች",
-    amount_to_pay: "የሚከፈል መጠን",
-    payment_methods: "የክፍያ ዘዴዎች",
-    bank_transfer: "የባንክ ዝውውር",
-    telebirr: "ቴሌብር",
-    i_have_paid: "ከፍያለሁ",
-    transaction_number: "የግብይት ቁጥር",
-    enter_txn: "ከክፍያ ደረሰኝዎ የግብይት ቁጥሩን ያስገቡ።",
-    submit_order: "ትዕዛዝ አስገባ",
-    order_submitted: "ትዕዛዝ ገብቷል",
-    under_process: "ለፀደቁ በሂደት ላይ",
-    pending_approval: "በመጠባበቅ ላይ",
-    wait_approval: "ክፍያዎ በመገምገም ላይ ነው። ከፀደቀ በኋላ የፈቃድ ቁልፍ ይደርስዎታል።",
-    go_to_orders: "ወደ ትዕዛዞቼ ሂድ",
-    new_license: "አዲስ ፈቃድ",
-    renewal: "እድሳት",
-
-    // Profile
-    profile_title: "መገለጫ",
-    registration_required_title: "ምዝገባ ያስፈልጋል",
-    full_name: "ሙሉ ስም",
-    phone_number: "ስልክ ቁጥር",
-    my_licenses: "የእኔ ፈቃዶች",
-    my_orders: "የእኔ ትዕዛዞች",
-    no_licenses: "እስካሁን ፈቃድ የለም",
-    no_orders: "እስካሁን ትዕዛዝ የለም",
-    registered: "ተመዝግቧል",
-    renew: "አድስ",
-    get_next_key: "ቀጣዩን የፈቃድ ቁልፍ አግኝ",
-    all_keys_issued: "ሁሉም 5 ቁልፎች ተሰጥተዋል — ለማራዘም ድጋፍ ያግኙ",
-
-    // Toasts
-    please_register: "እባክዎ መጀመሪያ ይመዝገቡ",
-    enter_name_phone: "ስም እና ስልክ ያስገቡ",
-    telegram_not_found: "የቴሌግራም መለያ አልተገኘም",
-    enter_product_key_toast: "እባክዎ የምርት ቁልፍ ያስገቡ",
-    select_product_first: "እባክዎ መጀመሪያ ምርት ይምረጡ",
-    invalid_key: "ልክ ያልሆነ የምርት ቁልፍ",
-    enter_txn_toast: "እባክዎ የግብይት ቁጥር ያስገቡ",
-    user_not_found: "ተጠቃሚ አልተገኘም",
-    order_failed: "ትዕዛዝ ማስገባት አልተሳካም",
-    registered_success: "በተሳካ ሁኔታ ተመዝግበዋል"
-  }
-};
-
-// Load saved language or default to English
-if (!state.lang) {
-  state.lang = localStorage.getItem('pis_lang') || 'en';
-}
-
-function t(key) {
-  return (i18n[state.lang] && i18n[state.lang][key]) ||
-         (i18n['en'] && i18n['en'][key]) ||
-         key;
-}
-
-function setLanguage(lang) {
-  state.lang = lang;
-  localStorage.setItem('pis_lang', lang);
-  render();
-}
 
     
    // ================= TELEGRAM + CHECK USER =================
@@ -657,19 +431,366 @@ async function rejectOrder(orderId) {
   }
 }
 
-    
+    // ================= LANGUAGE =================
+const i18n = {
+  en: {
+    // Navigation
+    nav_home: "Home",
+    nav_products: "Products",
+    nav_license: "License",
+    nav_profile: "Profile",
+
+    // Common
+    continue: "Continue",
+    loading: "Loading...",
+    register: "Register",
+    register_now: "Register Now",
+    download_apk: "Download APK",
+    buy_license: "Buy License",
+    back: "Back",
+
+    // Home
+    home_title: "PIS License Store",
+    home_subtitle: "Official license activation for Pharmacy & Clinic POS systems.",
+    registration_required: "Registration Required",
+    registration_required_desc: "Please register first to buy a license.",
+    welcome: "Welcome",
+    you_are_registered: "You are registered",
+    how_it_works: "How it works",
+    step1_title: "Register",
+    step1_desc: "Create your account using phone number",
+    step2_title: "Download APK",
+    step2_desc: "Get the app from Products page",
+    step3_title: "Buy License",
+    step3_desc: "Enter Product Key and make payment",
+    step4_title: "Activate",
+    step4_desc: "Receive License Key after approval",
+    features: "Features",
+    feature_fast: "Fast Activation",
+    feature_fast_desc: "Quick license delivery",
+    feature_secure: "Secure",
+    feature_secure_desc: "Unique product keys",
+    feature_offline: "Offline App",
+    feature_offline_desc: "Works without internet",
+    feature_payment: "Local Payment",
+    feature_payment_desc: "Bank & Telebirr",
+
+    // Products
+    products_title: "Products",
+    about: "About",
+    no_products: "No products found",
+    after_install: "After installing, use the License tab to activate with your Product Key.",
+    no_description: "No description available.",
+
+    // License
+    choose_product: "Choose Product",
+    choose_product_desc: "Select which app you want to buy a license for",
+    product_key: "Product Key",
+    enter_product_key: "Enter your Product Key",
+    how_license_works: "How license purchase works",
+    license_step1: "Enter the Product Key that appears in your app.",
+    license_step2: "Make payment using Bank or Telebirr.",
+    license_step3: "Submit the Transaction Number.",
+    license_step4: "After approval you will receive your License Key.",
+    license_renewal_note: "The same Product Key can be used later for renewal.",
+    payment_details: "Payment Details",
+    amount_to_pay: "Amount to Pay",
+    payment_methods: "Payment Methods",
+    bank_transfer: "Bank Transfer",
+    telebirr: "Telebirr",
+    i_have_paid: "I Have Paid",
+    transaction_number: "Transaction Number",
+    enter_txn: "Enter the Transaction Number from your payment receipt.",
+    submit_order: "Submit Order",
+    order_submitted: "Order Submitted",
+    under_process: "Under Process for Approval",
+    pending_approval: "Pending Approval",
+    wait_approval: "Your payment is being reviewed. You will receive the License Key after approval.",
+    go_to_orders: "Go to My Orders",
+    new_license: "New License",
+    renewal: "Renewal",
+
+    // Profile
+    profile_title: "Profile",
+    registration_required_title: "Registration Required",
+    full_name: "Full Name",
+    phone_number: "Phone Number",
+    my_licenses: "My Licenses",
+    my_orders: "My Orders",
+    no_licenses: "No licenses yet",
+    no_orders: "No orders yet",
+    registered: "Registered",
+    renew: "Renew",
+    get_next_key: "get next license key",
+    all_keys_issued: "All 5 keys issued — contact support to extend",
+
+    // Toasts / messages
+    please_register: "Please register first",
+    enter_name_phone: "Enter name and phone",
+    telegram_not_found: "Telegram ID not found",
+    enter_product_key_toast: "Please enter Product Key",
+    select_product_first: "Please select a product first",
+    invalid_key: "Invalid Product Key",
+    enter_txn_toast: "Please enter Transaction Number",
+    user_not_found: "User not found",
+    order_failed: "Failed to submit order",
+    registered_success: "Registered successfully"
+  },
+
+  am: {
+    // Navigation
+    nav_home: "መነሻ",
+    nav_products: "ምርቶች",
+    nav_license: "ፈቃድ",
+    nav_profile: "መገለጫ",
+
+    // Common
+    continue: "ቀጥል",
+    loading: "በመጫን ላይ...",
+    register: "ይመዝገቡ",
+    register_now: "አሁን ይመዝገቡ",
+    download_apk: "APK አውርድ",
+    buy_license: "ፈቃድ ግዛ",
+    back: "ተመለስ",
+
+    // Home
+    home_title: "PIS የፈቃድ መደብር",
+    home_subtitle: "ለፋርማሲ እና ክሊኒክ POS ስርዓቶች ኦፊሴላዊ የፈቃድ ማግበሪያ።",
+    registration_required: "ምዝገባ ያስፈልጋል",
+    registration_required_desc: "ፈቃድ ለመግዛት መጀመሪያ ይመዝገቡ።",
+    welcome: "እንኳን ደህና መጡ",
+    you_are_registered: "ተመዝግበዋል",
+    how_it_works: "እንዴት እንደሚሰራ",
+    step1_title: "ይመዝገቡ",
+    step1_desc: "በስልክ ቁጥርዎ መለያ ይፍጠሩ",
+    step2_title: "APK አውርድ",
+    step2_desc: "ከምርቶች ገጽ መተግበሪያውን ያግኙ",
+    step3_title: "ፈቃድ ግዛ",
+    step3_desc: "የምርት ቁልፍ ያስገቡ እና ክፍያ ይፈጽሙ",
+    step4_title: "ያግብሩ",
+    step4_desc: "ከፀደቀ በኋላ የፈቃድ ቁልፍ ይደርስዎታል",
+    features: "ባህሪያት",
+    feature_fast: "ፈጣን ማግበሪያ",
+    feature_fast_desc: "ፈጣን የፈቃድ አቅርቦት",
+    feature_secure: "ደህንነቱ የተጠበቀ",
+    feature_secure_desc: "ልዩ የምርት ቁልፎች",
+    feature_offline: "ኦፍላይን መተግበሪያ",
+    feature_offline_desc: "ያለ ኢንተርኔት ይሰራል",
+    feature_payment: "የአካባቢ ክፍያ",
+    feature_payment_desc: "ባንክ እና ቴሌብር",
+
+    // Products
+    products_title: "ምርቶች",
+    about: "ስለ",
+    no_products: "ምንም ምርት አልተገኘም",
+    after_install: "ከጫኑ በኋላ፣ በፈቃድ ትር የምርት ቁልፍዎን በመጠቀም ያግብሩ።",
+    no_description: "መግለጫ የለም።",
+
+    // License
+    choose_product: "ምርት ይምረጡ",
+    choose_product_desc: "ፈቃድ መግዛት የሚፈልጉትን መተግበሪያ ይምረጡ",
+    product_key: "የምርት ቁልፍ",
+    enter_product_key: "የምርት ቁልፍዎን ያስገቡ",
+    how_license_works: "የፈቃድ ግዢ እንዴት እንደሚሰራ",
+    license_step1: "በመተግበሪያዎ ላይ የሚታየውን የምርት ቁልፍ ያስገቡ።",
+    license_step2: "በባንክ ወይም ቴሌብር ክፍያ ይፈጽሙ።",
+    license_step3: "የግብይት ቁጥሩን ያስገቡ።",
+    license_step4: "ከፀደቀ በኋላ የፈቃድ ቁልፍ ይደርስዎታል።",
+    license_renewal_note: "ተመሳሳይ የምርት ቁልፍ በኋላ ለእድሳት ሊያገለግል ይችላል።",
+    payment_details: "የክፍያ ዝርዝሮች",
+    amount_to_pay: "የሚከፈል መጠን",
+    payment_methods: "የክፍያ ዘዴዎች",
+    bank_transfer: "የባንክ ዝውውር",
+    telebirr: "ቴሌብር",
+    i_have_paid: "ከፍያለሁ",
+    transaction_number: "የግብይት ቁጥር",
+    enter_txn: "ከክፍያ ደረሰኝዎ የግብይት ቁጥሩን ያስገቡ።",
+    submit_order: "ትዕዛዝ አስገባ",
+    order_submitted: "ትዕዛዝ ገብቷል",
+    under_process: "ለፀደቁ በሂደት ላይ",
+    pending_approval: "በመጠባበቅ ላይ",
+    wait_approval: "ክፍያዎ በመገምገም ላይ ነው። ከፀደቀ በኋላ የፈቃድ ቁልፍ ይደርስዎታል።",
+    go_to_orders: "ወደ ትዕዛዞቼ ሂድ",
+    new_license: "አዲስ ፈቃድ",
+    renewal: "እድሳት",
+
+    // Profile
+    profile_title: "መገለጫ",
+    registration_required_title: "ምዝገባ ያስፈልጋል",
+    full_name: "ሙሉ ስም",
+    phone_number: "ስልክ ቁጥር",
+    my_licenses: "የእኔ ፈቃዶች",
+    my_orders: "የእኔ ትዕዛዞች",
+    no_licenses: "እስካሁን ፈቃድ የለም",
+    no_orders: "እስካሁን ትዕዛዝ የለም",
+    registered: "ተመዝግቧል",
+    renew: "አድስ",
+    get_next_key: "ቀጣዩን የፈቃድ ቁልፍ አግኝ",
+    all_keys_issued: "ሁሉም 5 ቁልፎች ተሰጥተዋል — ለማራዘም ድጋፍ ያግኙ",
+
+    // Toasts
+    please_register: "እባክዎ መጀመሪያ ይመዝገቡ",
+    enter_name_phone: "ስም እና ስልክ ያስገቡ",
+    telegram_not_found: "የቴሌግራም መለያ አልተገኘም",
+    enter_product_key_toast: "እባክዎ የምርት ቁልፍ ያስገቡ",
+    select_product_first: "እባክዎ መጀመሪያ ምርት ይምረጡ",
+    invalid_key: "ልክ ያልሆነ የምርት ቁልፍ",
+    enter_txn_toast: "እባክዎ የግብይት ቁጥር ያስገቡ",
+    user_not_found: "ተጠቃሚ አልተገኘም",
+    order_failed: "ትዕዛዝ ማስገባት አልተሳካም",
+    registered_success: "በተሳካ ሁኔታ ተመዝግበዋል"
+  }
+};
+
+// Language state
+if (typeof state.lang === 'undefined') {
+  state.lang = localStorage.getItem('pis_lang') || 'en';
+}
+
+function t(key) {
+  try {
+    if (!state.lang) state.lang = 'en';
+    if (typeof i18n !== 'undefined' && i18n[state.lang] && i18n[state.lang][key]) {
+      return i18n[state.lang][key];
+    }
+    if (typeof i18n !== 'undefined' && i18n.en && i18n.en[key]) {
+      return i18n.en[key];
+    }
+    return key;
+  } catch (e) {
+    return key;
+  }
+}
+
+function setLanguage(lang) {
+  state.lang = lang;
+  localStorage.setItem('pis_lang', lang);
+  render();
+}
+
+function languageSwitcher() {
+  if (state.isAdmin) return '';
+
+  return `
+    <div class="flex gap-2 justify-center mt-3">
+      <button onclick="setLanguage('en')" 
+        class="px-3 py-1 rounded-lg text-xs border ${state.lang === 'en' ? 'bg-emerald-500 text-white border-emerald-500' : 'border-border text-muted'}">
+        EN
+      </button>
+      <button onclick="setLanguage('am')" 
+        class="px-3 py-1 rounded-lg text-xs border ${state.lang === 'am' ? 'bg-emerald-500 text-white border-emerald-500' : 'border-border text-muted'}">
+        አማ
+      </button>
+    </div>
+  `;
+}
     // ================= HOME =================
   function renderHome() {
   return `
-    ${header('PIS License Store')}
+    ${header(t('home_title'))}
     <main class="px-4 pt-5 space-y-5 fade-in pb-8">
-      <div class="bg-card border border-border rounded-2xl p-5 text-center">
+
+      <!-- Hero -->
+      <div class="bg-gradient-to-br from-emerald-500/20 to-card border border-border rounded-2xl p-5 text-center">
         <div class="text-4xl mb-2">🔐</div>
-        <h2 class="text-xl font-bold text-emerald-400">PIS License Store</h2>
-        <p class="text-sm text-slate-300 mt-2">Home is working</p>
-        ${typeof languageSwitcher === 'function' ? languageSwitcher() : '<p class="text-xs text-red-400 mt-2">languageSwitcher missing</p>'}
+        <h2 class="text-xl font-bold text-emerald-400">${t('home_title')}</h2>
+        <p class="text-sm text-slate-300 mt-2">${t('home_subtitle')}</p>
+        
+        <!-- Language Switcher -->
+        ${languageSwitcher()}
       </div>
-      <p class="text-sm text-muted text-center">If you see this, Home render works.</p>
+
+      <!-- Registration Status -->
+      ${!state.user.registered ? `
+        <div class="bg-amber-500/10 border border-amber-500/40 rounded-xl p-4">
+          <div class="font-medium text-amber-300 mb-1">${t('registration_required')}</div>
+          <p class="text-sm text-slate-300 mb-3">${t('registration_required_desc')}</p>
+          <button onclick="navigate('profile')" class="w-full py-2.5 rounded-lg bg-amber-500 text-black font-semibold text-sm">
+            ${t('register_now')}
+          </button>
+        </div>
+      ` : `
+        <div class="bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-4 flex items-center gap-3">
+          <div class="text-2xl">✅</div>
+          <div>
+            <div class="font-medium text-emerald-300">${t('welcome')}, ${state.user.name}</div>
+            <div class="text-xs text-muted">${t('you_are_registered')}</div>
+          </div>
+        </div>
+      `}
+
+      <!-- How it works -->
+      <div class="bg-card border border-border rounded-xl p-4">
+        <h3 class="text-sm font-semibold mb-3 text-slate-200">${t('how_it_works')}</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">1</div>
+            <div>
+              <div class="font-medium">${t('step1_title')}</div>
+              <div class="text-muted text-xs">${t('step1_desc')}</div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">2</div>
+            <div>
+              <div class="font-medium">${t('step2_title')}</div>
+              <div class="text-muted text-xs">${t('step2_desc')}</div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">3</div>
+            <div>
+              <div class="font-medium">${t('step3_title')}</div>
+              <div class="text-muted text-xs">${t('step3_desc')}</div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">4</div>
+            <div>
+              <div class="font-medium">${t('step4_title')}</div>
+              <div class="text-muted text-xs">${t('step4_desc')}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="bg-card border border-border rounded-xl p-4">
+        <h3 class="text-sm font-semibold mb-3 text-slate-200">${t('features')}</h3>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div class="bg-bg rounded-lg p-3 border border-border">
+            <div class="text-lg mb-1">⚡</div>
+            <div class="font-medium">${t('feature_fast')}</div>
+            <div class="text-xs text-muted">${t('feature_fast_desc')}</div>
+          </div>
+          <div class="bg-bg rounded-lg p-3 border border-border">
+            <div class="text-lg mb-1">🔒</div>
+            <div class="font-medium">${t('feature_secure')}</div>
+            <div class="text-xs text-muted">${t('feature_secure_desc')}</div>
+          </div>
+          <div class="bg-bg rounded-lg p-3 border border-border">
+            <div class="text-lg mb-1">📱</div>
+            <div class="font-medium">${t('feature_offline')}</div>
+            <div class="text-xs text-muted">${t('feature_offline_desc')}</div>
+          </div>
+          <div class="bg-bg rounded-lg p-3 border border-border">
+            <div class="text-lg mb-1">💳</div>
+            <div class="font-medium">${t('feature_payment')}</div>
+            <div class="text-xs text-muted">${t('feature_payment_desc')}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="navigate('products')" class="py-3 rounded-xl bg-card border border-border font-medium text-sm">
+          🛍 ${t('nav_products')}
+        </button>
+        <button onclick="navigate('license')" class="py-3 rounded-xl bg-emerald-500 text-white font-medium text-sm">
+          🔑 ${t('buy_license')}
+        </button>
+      </div>
+
     </main>
     ${bottomNav('home')}`;
 }
