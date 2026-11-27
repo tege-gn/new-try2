@@ -880,50 +880,35 @@ function renderProductIcon(p, large = false) {
 
     
 function renderProducts() {
-  // If a product is selected → show detail page
   if (state.selectedProductCode) {
     return renderProductDetail();
   }
 
-  // Otherwise show list page
   if (state.products.length === 0 && !state.loading) {
     loadProducts();
   }
 
   return `
-    ${header('Products')}
-    <main class="px-4 pt-5 space-y-4 fade-in pb-28">
-  
-  <!-- Header Section -->
-  <div class="space-y-1 mb-2">
-    <h1 class="text-2xl font-bold text-slate-100">Our Products</h1>
-    <p class="text-sm text-muted">Download the latest POS software for your pharmacy or clinic.</p>
-  </div>
+    ${header(t('products_title'))}
+    <main class="px-4 pt-4 space-y-3 fade-in pb-28">
+      ${state.loading ? `<p class="text-center text-muted py-10">${t('loading')}</p>` : ''}
 
-  <!-- List Section -->
-  <div class="space-y-3">
-    ${state.loading ? `<p class="text-center text-muted py-10">Loading...</p>` : ''}
-
-    ${state.products.map(p => `
-      <button onclick="openProduct('${p.code}')"
-        class="w-full flex items-center gap-3 p-4 bg-card border border-border rounded-xl text-left active:scale-[0.98] transition">
-        
-        <div class="w-12 h-12 rounded-xl bg-bg border border-border flex items-center justify-center overflow-hidden">
-          ${renderProductIcon(p)}
-        </div>
-
-        <div class="flex-1 min-w-0">
-          <div class="font-medium truncate">${p.name}</div>
-          <div class="text-xs text-muted">v${p.version || '-'} · ${p.price || 0} ETB</div>
-        </div>
-
-        <div class="text-muted text-lg">→</div>
-      </button>
-    `).join('') || (!state.loading ? `
-      <div class="text-center text-muted py-10">No products found</div>
-    ` : '')}
-  </div>
-</main>
+      ${state.products.map(p => `
+        <button onclick="openProduct('${p.code}')"
+          class="w-full flex items-center gap-3 p-4 bg-card border border-border rounded-xl text-left active:scale-[0.98] transition">
+          <div class="w-12 h-12 rounded-xl bg-bg border border-border flex items-center justify-center overflow-hidden">
+            ${renderProductIcon(p)}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium truncate">${p.name}</div>
+            <div class="text-xs text-muted">v${p.version || '-'} · ${p.price || 0} ETB</div>
+          </div>
+          <div class="text-muted text-lg">→</div>
+        </button>
+      `).join('') || (!state.loading ? `
+        <div class="text-center text-muted py-10">${t('no_products')}</div>
+      ` : '')}
+    </main>
     ${bottomNav('products')}`;
 }
 
@@ -940,7 +925,6 @@ function closeProduct() {
 
 function renderProductDetail() {
   const p = state.products.find(x => x.code === state.selectedProductCode);
-
   if (!p) {
     state.selectedProductCode = null;
     return renderProducts();
@@ -949,8 +933,6 @@ function renderProductDetail() {
   return `
     ${header(p.name, "closeProduct()")}
     <main class="px-4 pt-5 pb-28 space-y-5 fade-in">
-
-      <!-- Icon + basic info -->
       <div class="flex flex-col items-center text-center">
         <div class="w-20 h-20 rounded-2xl bg-card border border-border flex items-center justify-center overflow-hidden mb-3">
           ${renderProductIcon(p, true)}
@@ -960,24 +942,19 @@ function renderProductDetail() {
         <p class="text-emerald-400 font-semibold mt-1">${p.price || 0} ETB</p>
       </div>
 
-      <!-- Description (Column C) -->
       <div class="bg-card border border-border rounded-xl p-4">
-        <h2 class="text-xs uppercase tracking-wider text-muted mb-2">About</h2>
+        <h2 class="text-xs uppercase tracking-wider text-muted mb-2">${t('about')}</h2>
         <p class="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-          ${p.description || 'No description available.'}
+          ${p.description || t('no_description')}
         </p>
       </div>
 
-      <!-- Download Button -->
       <button onclick="downloadApk('${p.code}')"
-        class="w-full py-3.5 rounded-xl bg-emerald-500 text-white font-semibold active:scale-[0.98] transition">
-        ⬇ Download APK
+        class="w-full py-3.5 rounded-xl bg-emerald-500 text-white font-semibold">
+        ⬇ ${t('download_apk')}
       </button>
 
-      <p class="text-xs text-muted text-center">
-        After installing, use the License tab to activate with your Product Key.
-      </p>
-
+      <p class="text-xs text-muted text-center">${t('after_install')}</p>
     </main>
     ${bottomNav('products')}`;
 }
@@ -1013,32 +990,28 @@ function renderLicense() {
 // STEP 1: Choose Product
 function renderLicenseProduct() {
   return `
-    ${header('Buy License')}
+    ${header(t('buy_license'))}
     <main class="px-4 pt-6 pb-32 space-y-5 fade-in">
       <div class="text-center">
         <div class="text-4xl mb-2">🔑</div>
-        <h2 class="font-semibold text-lg">Choose Product</h2>
-        <p class="text-sm text-muted mt-1">Select which app you want to buy a license for</p>
+        <h2 class="font-semibold text-lg">${t('choose_product')}</h2>
+        <p class="text-sm text-muted mt-1">${t('choose_product_desc')}</p>
       </div>
 
       <div class="space-y-3">
         ${state.products.length ? state.products.map(p => `
           <button onclick="selectLicenseProduct('${p.code}')"
-            class="w-full flex items-center gap-3 p-4 bg-card border border-border rounded-xl text-left active:scale-[0.98] transition">
-            
+            class="w-full flex items-center gap-3 p-4 bg-card border border-border rounded-xl text-left">
             <div class="w-12 h-12 rounded-xl bg-bg border border-border flex items-center justify-center overflow-hidden">
               ${renderProductIcon(p)}
             </div>
-
             <div class="flex-1">
               <div class="font-medium">${p.name}</div>
               <div class="text-xs text-muted">v${p.version} · ${p.price} ETB</div>
             </div>
             <div class="text-emerald-400">→</div>
           </button>
-        `).join('') : `
-          <div class="text-center text-muted py-8">Loading products...</div>
-        `}
+        `).join('') : `<div class="text-center text-muted py-8">${t('loading')}</div>`}
       </div>
     </main>
     ${bottomNav('license')}`;
@@ -1058,44 +1031,39 @@ function renderLicenseKey() {
   const p = state.selectedProduct;
 
   return `
-    ${header('Product Key', "state.buyStep='product'; render()")}
+    ${header(t('product_key'), "state.buyStep='product'; render()")}
     <main class="px-4 pt-6 pb-32 space-y-5 fade-in">
-
-      <!-- Selected Product -->
-     <!-- Selected Product -->
-<div class="bg-card border border-border rounded-xl p-3 flex items-center gap-3">
-  <div class="w-12 h-12 rounded-xl bg-bg border border-border flex items-center justify-center overflow-hidden">
-    ${renderProductIcon(p)}
-  </div>
-  <div>
-    <div class="font-medium text-sm">${p?.name || ''}</div>
-    <div class="text-xs text-muted">${p?.price || 0} ETB</div>
-  </div>
-</div>
+      <div class="bg-card border border-border rounded-xl p-3 flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-bg border border-border flex items-center justify-center overflow-hidden">
+          ${renderProductIcon(p)}
+        </div>
+        <div>
+          <div class="font-medium text-sm">${p?.name || ''}</div>
+          <div class="text-xs text-muted">${p?.price || 0} ETB</div>
+        </div>
+      </div>
 
       <div>
-        <label class="text-xs text-muted uppercase tracking-wider mb-1 block">Product Key</label>
+        <label class="text-xs text-muted uppercase tracking-wider mb-1 block">${t('product_key')}</label>
         <input type="text" value="${state.productKey}" 
           oninput="state.productKey = this.value"
           placeholder="e.g. 178D4F76"
           class="w-full bg-bg border border-border rounded-lg px-3 py-3 text-sm mono" />
       </div>
 
-      <!-- How it works explanation -->
       <div class="bg-card border border-border rounded-xl p-4 text-sm text-muted space-y-2">
-        <div class="font-medium text-slate-300 mb-1">How license purchase works</div>
-        <p>1. Enter the <span class="text-slate-200">Product Key</span> that appears in your app.</p>
-        <p>2. Make payment using Bank or Telebirr.</p>
-        <p>3. Submit the Transaction Number.</p>
-        <p>4. After approval you will receive your License Key.</p>
-        <p class="pt-1 text-xs">The same Product Key can be used later for renewal (Key 2, Key 3...).</p>
+        <div class="font-medium text-slate-300 mb-1">${t('how_license_works')}</div>
+        <p>1. ${t('license_step1')}</p>
+        <p>2. ${t('license_step2')}</p>
+        <p>3. ${t('license_step3')}</p>
+        <p>4. ${t('license_step4')}</p>
+        <p class="pt-1 text-xs">${t('license_renewal_note')}</p>
       </div>
-
     </main>
 
     <div class="fixed bottom-16 inset-x-0 max-w-md mx-auto p-4 z-40">
       <button onclick="resolveKey()" class="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">
-        Continue
+        ${t('continue')}
       </button>
     </div>
     ${bottomNav('license')}`;
@@ -1303,42 +1271,46 @@ function resetBuy() {
 }
 
     // ================= PROFILE =================
-    function renderProfile() {
-      return `
-        ${header('Profile')}
-        <main class="px-4 pt-4 space-y-4 fade-in">
-          ${!state.user.registered ? `
-            <div class="bg-card border border-border rounded-xl p-4 space-y-3">
-              <h2 class="font-semibold">Registration Required</h2>
-              <input type="text" placeholder="Full Name" value="${state.regName}" oninput="state.regName=this.value"
-                class="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm" />
-              <input type="tel" placeholder="Phone Number" value="${state.regPhone}" oninput="state.regPhone=this.value"
-                class="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm" />
-              <button onclick="register()" class="w-full py-2.5 rounded-lg bg-emerald-500 text-white font-medium">
-                Register
-              </button>
-            </div>
-          ` : `
-            <div class="bg-card border border-border rounded-xl p-4">
-              <div class="font-semibold">${state.user.name}</div>
-              <div class="text-xs text-muted mono mt-1">Chat ID: ${state.user.chatId}</div>
-              <div class="text-sm text-emerald-400 mt-2">✅ Registered</div>
-            </div>
-          `}
+   function renderProfile() {
+  return `
+    ${header(t('profile_title'))}
+    <main class="px-4 pt-4 space-y-4 fade-in">
+      ${!state.user.registered ? `
+        <div class="bg-card border border-border rounded-xl p-4 space-y-3">
+          <h2 class="font-semibold">${t('registration_required_title')}</h2>
+          <input type="text" placeholder="${t('full_name')}" value="${state.regName}"
+            oninput="state.regName=this.value"
+            class="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm" />
+          <input type="tel" placeholder="${t('phone_number')}" value="${state.regPhone}"
+            oninput="state.regPhone=this.value"
+            class="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm" />
+          <button onclick="register()" class="w-full py-2.5 rounded-lg bg-emerald-500 text-white font-medium">
+            ${t('register')}
+          </button>
+        </div>
+      ` : `
+        <div class="bg-card border border-border rounded-xl p-4">
+          <div class="font-semibold">${state.user.name}</div>
+          <div class="text-xs text-muted mono mt-1">Chat ID: ${state.user.chatId}</div>
+          <div class="text-sm text-emerald-400 mt-2">✅ ${t('registered')}</div>
+        </div>
+      `}
 
-          <div>
-            <h2 class="text-xs uppercase text-muted mb-2">My Licenses</h2>
-            <div id="licensesList" class="text-sm text-muted">Loading...</div>
-          </div>
+      ${languageSwitcher()}
 
-          <div>
-            <h2 class="text-xs uppercase text-muted mb-2">My Orders</h2>
-            <div id="ordersList" class="text-sm text-muted">Loading...</div>
-          </div>
-        </main>
-        ${bottomNav('profile')}`;
-    }
+      <div>
+        <h2 class="text-xs uppercase text-muted mb-2">${t('my_licenses')}</h2>
+        <div id="licensesList" class="text-sm text-muted">${t('loading')}</div>
+      </div>
 
+      <div>
+        <h2 class="text-xs uppercase text-muted mb-2">${t('my_orders')}</h2>
+        <div id="ordersList" class="text-sm text-muted">${t('loading')}</div>
+      </div>
+    </main>
+    ${bottomNav('profile')}`;
+}
+    
     async function register() {
       if (!state.regName.trim() || !state.regPhone.trim()) return toast('Enter name and phone');
       if (!state.user.chatId) return toast('Telegram ID not found');
